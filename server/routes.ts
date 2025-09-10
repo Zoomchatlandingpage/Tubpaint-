@@ -1,0 +1,232 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from "ws";
+import multer from "multer";
+import path from "path";
+import { storage } from "./storage";
+import { insertQuoteSchema, insertChatMessageSchema, insertServiceTypeSchema, insertAdminConfigSchema } from "@shared/schema";
+import { randomUUID } from "crypto";
+
+const upload = multer({ 
+  dest: "uploads/",
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files allowed'));
+    }
+  }
+});
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  const httpServer = createServer(app);
+
+  // WebSocket server for chat
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  const clients = new Map<string, WebSocket>();
+
+  wss.on('connection', (ws) => {
+    const clientId = randomUUID();
+    clients.set(clientId, ws);
+
+    ws.on('message', async (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        
+        if (message.type === 'chat') {
+          // Store user message
+          await storage.createChatMessage({
+            sessionId: message.sessionId,
+            role: 'user',
+            content: message.content
+          });
+
+          // Echo back (in production, this would call AI service)
+          const aiResponse = {
+            type: 'chat',
+            sessionId: message.sessionId,
+            role: 'assistant',
+            content: `I received your message: "${message.content}". I'm here to help with your bathroom refinishing needs!`,
+            timestamp: new Date().toISOString()
+          };
+
+          // Store AI response
+          await storage.createChatMessage({
+            sessionId: message.sessionId,
+            role: 'assistant',
+            content: aiResponse.content
+          });
+
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(aiResponse));
+          }
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      clients.delete(clientId);
+    });
+  });
+
+  // Public API routes
+  app.get('/api/service-types', async (req, res) => {
+    try {
+      const serviceTypes = await storage.getServiceTypes();
+      res.json(serviceTypes);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch service types' });
+    }
+  });
+
+  app.post('/api/quotes', upload.single('photo'), async (req, res) => {
+    try {
+      const { customerEmail, customerName, serviceTypeId } = req.body;
+      
+      if (!serviceTypeId) {
+        return res.status(400).json({ error: 'Service type is required' });
+      }
+
+      const serviceType = await storage.getServiceType(serviceTypeId);
+      if (!serviceType) {
+        return res.status(400).json({ error: 'Invalid service type' });
+      }
+
+      const photoPath = req.file ? req.file.path : undefined;
+      
+      // Basic price calculation (in production, this would use AI analysis)
+      const totalPrice = serviceType.basePrice;
+
+      const quoteData = {
+        customerEmail,
+        customerName,
+        serviceTypeId,
+        photoPath,
+        totalPrice,
+        status: 'pending'
+      };
+
+      const validatedData = insertQuoteSchema.parse(quoteData);
+      const quote = await storage.createQuote(validatedData);
+
+      res.json(quote);
+    } catch (error) {
+      console.error('Quote creation error:', error);
+      res.status(500).json({ error: 'Failed to create quote' });
+    }
+  });
+
+  app.get('/api/quotes/:id', async (req, res) => {
+    try {
+      const quote = await storage.getQuote(req.params.id);
+      if (!quote) {
+        return res.status(404).json({ error: 'Quote not found' });
+      }
+      res.json(quote);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch quote' });
+    }
+  });
+
+  app.get('/api/chat/:sessionId', async (req, res) => {
+    try {
+      const messages = await storage.getChatMessages(req.params.sessionId);
+      res.json(messages);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch chat messages' });
+    }
+  });
+
+  // Admin API routes
+  app.post('/api/admin/login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      // Simple authentication (in production, use proper auth)
+      if (username === 'admin' && password === 'admin123') {
+        res.json({ success: true, token: 'admin-token' });
+      } else {
+        res.status(401).json({ error: 'Invalid credentials' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Login failed' });
+    }
+  });
+
+  app.get('/api/admin/quotes', async (req, res) => {
+    try {
+      const quotes = await storage.getQuotes();
+      res.json(quotes);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch quotes' });
+    }
+  });
+
+  app.put('/api/admin/quotes/:id', async (req, res) => {
+    try {
+      const updatedQuote = await storage.updateQuote(req.params.id, req.body);
+      if (!updatedQuote) {
+        return res.status(404).json({ error: 'Quote not found' });
+      }
+      res.json(updatedQuote);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update quote' });
+    }
+  });
+
+  app.get('/api/admin/service-types', async (req, res) => {
+    try {
+      const serviceTypes = await storage.getServiceTypes();
+      res.json(serviceTypes);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch service types' });
+    }
+  });
+
+  app.post('/api/admin/service-types', async (req, res) => {
+    try {
+      const validatedData = insertServiceTypeSchema.parse(req.body);
+      const serviceType = await storage.createServiceType(validatedData);
+      res.json(serviceType);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to create service type' });
+    }
+  });
+
+  app.put('/api/admin/service-types/:id', async (req, res) => {
+    try {
+      const updatedServiceType = await storage.updateServiceType(req.params.id, req.body);
+      if (!updatedServiceType) {
+        return res.status(404).json({ error: 'Service type not found' });
+      }
+      res.json(updatedServiceType);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update service type' });
+    }
+  });
+
+  app.get('/api/admin/config', async (req, res) => {
+    try {
+      const config = await storage.getAdminConfig();
+      res.json(config);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to fetch config' });
+    }
+  });
+
+  app.put('/api/admin/config', async (req, res) => {
+    try {
+      const validatedData = insertAdminConfigSchema.parse(req.body);
+      const config = await storage.updateAdminConfig(validatedData);
+      res.json(config);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to update config' });
+    }
+  });
+
+  return httpServer;
+}
