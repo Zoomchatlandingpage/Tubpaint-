@@ -1,0 +1,154 @@
+🎨 LANDING PAGE DESIGN - SIMPLIFIED VERSION
+🏠 HEADER & HERO SECTION
+Navigation (Scroll Menu)
+┌─────────────────────────────────────────────────────┐
+│ RefineAI    Services | Gallery | Pricing | Contact  │
+└─────────────────────────────────────────────────────┘
+Click behavior: Smooth scroll to respective sections
+Hero Section
+Headline:
+
+"Transform Your Bathtub in 24 Hours with AI-Powered Precision"
+
+Sub-headline:
+
+"Upload a photo, see your preview, get instant pricing"
+
+Hero Visual:
+
+Clean before/after bathtub transformation
+No overlay - just pure visual impact
+
+Dual CTA:
+┌─────────────────┐  ┌─────────────────┐
+│  📸 Upload Photo │  │  💬 Chat with AI │
+│  Get Quote       │  │  Design Helper   │
+└─────────────────┘  └─────────────────┘
+
+🛠️ SERVICES SECTION (scroll target)
+What We Do
+┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+│   🛁 Bathtub     │ │   🚿 Shower      │ │   🏺 Tile        │
+│   Refinishing    │ │   Refinishing    │ │   Refinishing    │
+│                  │ │                  │ │                  │
+│ Like new in      │ │ Non-slip         │ │ Any color        │
+│ 24 hours         │ │ surfaces         │ │ you want         │
+└──────────────────┘ └──────────────────┘ └──────────────────┘
+Trust Signals Grid
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│ 🏆 Licensed │ │ 💰 Money    │ │ ⚡ 24 hrs   │
+│ & Insured   │ │ Back Guar.  │ │ Service Done│
+└─────────────┘ └─────────────┘ └─────────────┘
+
+🖼️ GALLERY SECTION (scroll target)
+Before/After Showcase
+┌─────────────────────────────────────┐
+│        BEFORE    |    AFTER         │
+│   [Damaged Tub]  | [Perfect Tub]    │
+│                  |                  │
+│   [Old Shower]   | [Modern Shower]  │
+│                  |                  │
+│   [Worn Tiles]   | [Fresh Tiles]    │
+└─────────────────────────────────────┘
+AI Preview Demo:
+
+"See what our AI can do - Upload your photo for instant preview"
+
+[Sample Photo] → [AI Generated Preview] → [Final Result]
+    Original         30 seconds later      Actual finish
+
+💰 PRICING SECTION (scroll target)
+Get Your Quote
+┌─────────────────────────────────────────────────────┐
+│              📸 UPLOAD YOUR PHOTO                   │
+│                                                     │
+│         [Drag & Drop or Click to Upload]            │
+│                                                     │
+│              💬 OR CHAT WITH AI                     │
+│                                                     │
+│           [Start AI Design Session]                 │
+└─────────────────────────────────────────────────────┘
+AI Visual Generation Flow
+Step 1: 📸 Photo Upload → AI analyzes your bathtub
+Step 2: 🎨 Style Selection → Choose colors/finishes  
+Step 3: 🤖 n8n Webhook → Generate realistic 3D preview
+Step 4: 👀 Preview Result → See your new bathtub
+Step 5: 📋 Quote Generation → Get exact pricing
+Step 6: 📧 Contact Info → Name & Email to save your quote
+Quote Form (appears after preview)
+┌─────────────────────────────────────┐
+│ Your Quote: $XXX                    │
+│                                     │
+│ Name: [________________]            │
+│ Email: [________________]           │
+│                                     │
+│ [📧 Send Me My Quote]               │
+└─────────────────────────────────────┘
+
+📞 CONTACT SECTION (scroll target)
+Get Started Today
+┌─────────────────────────────────────┐
+│           Ready to Transform?        │
+│                                     │
+│    📱 (555) 123-4567               │
+│    📧 hello@refineai.com           │
+│    📍 Serving [Your City]          │
+│                                     │
+│ [Schedule Free Consultation]        │
+└─────────────────────────────────────┘
+
+🤖 AI CHAT MODAL (floating button)
+Chat Interface
+┌─────────────────────────────────────┐
+│ 🎨 BathBot AI Designer             │
+├─────────────────────────────────────┤
+│ Bot: Hi! I can help you design     │
+│      your dream bathtub. Want to   │
+│      see what it would look like?  │
+│                                     │
+│ [📷 Upload Photo to Start]          │
+│                                     │
+│ User: [Type message...]             │
+│ [Send]                              │
+└─────────────────────────────────────┘
+After Photo Upload:
+│ Bot: Perfect! I can see your        │
+│      bathtub needs refinishing.     │
+│      Here are some color options:   │
+│                                     │
+│ [White] [Almond] [Gray] [Custom]    │
+│                                     │
+│ Bot: Generating your preview...     │
+│      ⏳ 30 seconds                  │
+└─────────────────────────────────────┘
+
+📱 MOBILE EXPERIENCE
+Sticky Actions (Bottom of Screen)
+┌─────────────────────────────────────┐
+│ 📸 Upload Photo | 💬 Chat AI       │
+└─────────────────────────────────────┘
+Single Column Layout
+
+Stack all sections vertically
+Large touch-friendly buttons
+Simplified navigation dots
+
+
+🎯 KEY DESIGN PRINCIPLES
+Clean & Simple
+
+White background with lots of space
+Minimal color palette: Blue (#1B365C) + Orange (#FF7A00)
+Clear typography hierarchy
+
+Conversion Focus
+
+Only 2 main CTAs throughout page
+Photo upload is primary action
+AI chat as secondary engagement
+
+Trust Building
+
+Real before/after photos
+Clear guarantees
+Professional credentials
