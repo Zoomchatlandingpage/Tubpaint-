@@ -89,26 +89,57 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Photo Upload */}
+      <div className="max-w-2xl mx-auto">
+        {/* Quote Form */}
         <Card className="glass-effect rounded-xl">
           <CardHeader>
             <div className="text-center">
               <div className="text-4xl mb-4">📸</div>
-              <CardTitle className="text-xl mb-2">Upload Your Photo</CardTitle>
-              <p className="text-muted-foreground">Get instant AI analysis</p>
+              <CardTitle className="text-xl mb-2">Get Your Quote</CardTitle>
+              <p className="text-muted-foreground">Upload photo for instant AI pricing</p>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Customer Info - FIRST */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="customerName">Your Name *</Label>
+                  <Input
+                    id="customerName"
+                    type="text"
+                    value={formData.customerName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
+                    className="bg-input border border-border"
+                    placeholder="Enter your full name"
+                    required
+                    data-testid="input-customer-name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="customerEmail">Email Address *</Label>
+                  <Input
+                    id="customerEmail"
+                    type="email"
+                    value={formData.customerEmail}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
+                    className="bg-input border border-border"
+                    placeholder="your@email.com"
+                    required
+                    data-testid="input-customer-email"
+                  />
+                </div>
+              </div>
+              
+              {/* Service Type */}
               <div>
-                <Label htmlFor="serviceType">Service Type</Label>
+                <Label htmlFor="serviceType">Service Type *</Label>
                 <Select 
                   value={formData.serviceTypeId} 
                   onValueChange={(value) => setFormData(prev => ({ ...prev, serviceTypeId: value }))}
                 >
                   <SelectTrigger data-testid="select-service-type">
-                    <SelectValue placeholder="Select a service" />
+                    <SelectValue placeholder="What needs refinishing?" />
                   </SelectTrigger>
                   <SelectContent>
                     {serviceTypes.map((service) => (
@@ -120,16 +151,17 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
                 </Select>
               </div>
 
+              {/* Photo Upload */}
               <div 
-                className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-primary transition-colors duration-200 cursor-pointer group"
+                className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors duration-200 cursor-pointer group"
                 onClick={() => document.getElementById('fileInput')?.click()}
                 data-testid="file-upload-area"
               >
-                <i className="fas fa-cloud-upload-alt text-4xl text-muted-foreground group-hover:text-primary transition-colors duration-200 mb-4"></i>
+                <i className="fas fa-cloud-upload-alt text-3xl text-muted-foreground group-hover:text-primary transition-colors duration-200 mb-3"></i>
                 <p className="text-lg font-medium mb-2">
-                  {selectedFile ? selectedFile.name : "Drag & Drop or Click to Upload"}
+                  {selectedFile ? selectedFile.name : "Upload Your Photo"}
                 </p>
-                <p className="text-sm text-muted-foreground">JPG, PNG up to 10MB</p>
+                <p className="text-sm text-muted-foreground">Click to select or drag & drop (JPG, PNG up to 10MB)</p>
                 <input 
                   id="fileInput"
                   type="file" 
@@ -140,9 +172,21 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
                 />
               </div>
               
+              {/* Generate Quote Button */}
               <Button 
-                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 font-semibold"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-4 text-lg font-semibold"
                 onClick={() => {
+                  // Validate customer info FIRST
+                  if (!formData.customerName.trim()) {
+                    toast({ title: "Please enter your name", variant: "destructive" });
+                    return;
+                  }
+                  
+                  if (!formData.customerEmail.trim()) {
+                    toast({ title: "Please enter your email address", variant: "destructive" });
+                    return;
+                  }
+                  
                   if (!formData.serviceTypeId) {
                     toast({ title: "Please select a service type", variant: "destructive" });
                     return;
@@ -157,69 +201,31 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
                     return;
                   }
 
-                  // Create FormData and make real API call
+                  // Create FormData with required info
                   const submitData = new FormData();
-                  submitData.append('customerName', formData.customerName || '');
-                  submitData.append('customerEmail', formData.customerEmail || '');
+                  submitData.append('customerName', formData.customerName.trim());
+                  submitData.append('customerEmail', formData.customerEmail.trim());
                   submitData.append('serviceTypeId', formData.serviceTypeId);
                   submitData.append('photo', selectedFile);
 
                   createQuoteMutation.mutate(submitData);
                 }}
-                disabled={!formData.serviceTypeId || createQuoteMutation.isPending}
+                disabled={createQuoteMutation.isPending}
                 data-testid="button-generate-quote"
               >
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center space-x-2">
                   {createQuoteMutation.isPending ? (
                     <>
-                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></div>
                       <span>Analyzing Photo...</span>
                     </>
                   ) : (
                     <>
-                      <i className="fas fa-robot"></i>
-                      <span>Get AI Quote</span>
-                      {!selectedFile && <span className="text-xs opacity-75">(Photo Required)</span>}
+                      <i className="fas fa-magic"></i>
+                      <span>Generate AI Quote</span>
                     </>
                   )}
                 </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* AI Chat Option */}
-        <Card className="glass-effect rounded-xl">
-          <CardHeader>
-            <div className="text-center">
-              <div className="text-4xl mb-4">💬</div>
-              <CardTitle className="text-xl mb-2">Chat with AI</CardTitle>
-              <p className="text-muted-foreground">Personalized assistance</p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-muted/20 rounded-lg p-6 mb-6 h-48 overflow-y-auto">
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-                    <i className="fas fa-robot text-xs text-primary-foreground"></i>
-                  </div>
-                  <div className="bg-white/10 rounded-lg p-3 flex-1">
-                    <p className="text-sm">Hi! I can help you design your dream bathtub. Want to see what it would look like?</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex space-x-2">
-              <Input 
-                type="text" 
-                placeholder="Type your message..." 
-                className="flex-1 bg-input border border-border text-sm"
-                data-testid="input-chat"
-              />
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <i className="fas fa-paper-plane"></i>
               </Button>
             </div>
           </CardContent>
@@ -370,55 +376,19 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
                   })()}
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="customerName">Your Name</Label>
-                  <Input
-                    id="customerName"
-                    type="text"
-                    value={formData.customerName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                    className="bg-input border border-border"
-                    required
-                    data-testid="input-customer-name"
-                  />
+              {/* Success message */}
+              <div className="text-center p-6 bg-secondary/10 rounded-lg border border-secondary/20">
+                <div className="flex items-center justify-center mb-4">
+                  <i className="fas fa-check-circle text-secondary text-3xl mr-3"></i>
+                  <h3 className="text-xl font-semibold">Quote Generated!</h3>
                 </div>
-                <div>
-                  <Label htmlFor="customerEmail">Email Address</Label>
-                  <Input
-                    id="customerEmail"
-                    type="email"
-                    value={formData.customerEmail}
-                    onChange={(e) => setFormData(prev => ({ ...prev, customerEmail: e.target.value }))}
-                    className="bg-input border border-border"
-                    required
-                    data-testid="input-customer-email"
-                  />
-                </div>
-              </div>
-              {/* Contact form for quote details */}
-              <div className="text-center p-4 bg-muted/10 rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">
-                  <i className="fas fa-check-circle text-secondary mr-2"></i>
-                  Quote generated successfully!
+                <p className="text-muted-foreground mb-2">
+                  Your personalized quote for <strong>{formData.customerName}</strong> has been created.
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {formData.customerName || formData.customerEmail ? 
-                    'Your quote details have been saved.' : 
-                    'Want a detailed report? Fill in your contact info above and submit for a complete analysis.'}
+                <p className="text-sm text-muted-foreground">
+                  We've saved your quote and will send you a detailed report at <strong>{formData.customerEmail}</strong>
                 </p>
               </div>
-              
-              {(formData.customerName || formData.customerEmail) && (
-                <Button 
-                  type="submit"
-                  className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground py-3 font-semibold"
-                  disabled={createQuoteMutation.isPending}
-                  data-testid="button-send-quote"
-                >
-                  📧 Send Detailed Quote Report
-                </Button>
-              )}
             </div>
           </CardContent>
         </Card>
