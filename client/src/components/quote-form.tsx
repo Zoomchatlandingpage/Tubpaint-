@@ -143,6 +143,11 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
               <Button 
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 font-semibold"
                 onClick={() => {
+                  if (!formData.serviceTypeId) {
+                    toast({ title: "Please select a service type", variant: "destructive" });
+                    return;
+                  }
+                  
                   if (!selectedFile) {
                     toast({ 
                       title: "Photo Required", 
@@ -151,24 +156,32 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
                     });
                     return;
                   }
-                  
-                  // Show AI processing (without revealing price)
-                  setQuote({ 
-                    id: 'processing', 
-                    totalPrice: 0,  // No price until AI completes
-                    serviceTypeId: formData.serviceTypeId,
-                    status: 'processing',
-                    createdAt: new Date(),
-                    aiAnalysis: null
-                  } as Quote);
+
+                  // Create FormData and make real API call
+                  const submitData = new FormData();
+                  submitData.append('customerName', formData.customerName || '');
+                  submitData.append('customerEmail', formData.customerEmail || '');
+                  submitData.append('serviceTypeId', formData.serviceTypeId);
+                  submitData.append('photo', selectedFile);
+
+                  createQuoteMutation.mutate(submitData);
                 }}
-                disabled={!formData.serviceTypeId}
+                disabled={!formData.serviceTypeId || createQuoteMutation.isPending}
                 data-testid="button-generate-quote"
               >
                 <div className="flex items-center space-x-2">
-                  <i className="fas fa-robot"></i>
-                  <span>Get AI Quote</span>
-                  {!selectedFile && <span className="text-xs opacity-75">(Photo Required)</span>}
+                  {createQuoteMutation.isPending ? (
+                    <>
+                      <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      <span>Analyzing Photo...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-robot"></i>
+                      <span>Get AI Quote</span>
+                      {!selectedFile && <span className="text-xs opacity-75">(Photo Required)</span>}
+                    </>
+                  )}
                 </div>
               </Button>
             </div>
@@ -214,7 +227,7 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
       </div>
       
       {/* AI Processing Loading */}
-      {quote?.status === 'processing' && (
+      {createQuoteMutation.isPending && (
         <Card className="glass-effect rounded-xl mt-8 transition-opacity duration-500">
           <CardContent className="p-8 text-center">
             <div className="space-y-6">
@@ -247,37 +260,35 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
       )}
       
       {/* Quote Results */}
-      {quote && quote.status !== 'processing' && (
+      {quote && !createQuoteMutation.isPending && (
         <Card className="glass-effect rounded-xl mt-8 transition-opacity duration-500" data-testid="quote-results">
           <CardHeader>
             <CardTitle className="text-center">Your Quote Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Only show price if AI analysis is complete */}
-              {quote.aiAnalysis ? (
-                <div className="flex justify-between items-center p-4 bg-primary/10 rounded-lg border border-primary/20">
-                  <div>
-                    <span className="text-sm text-muted-foreground">AI-Calculated Price:</span>
-                    <div className="text-xs text-muted-foreground">Based on photo analysis</div>
-                  </div>
-                  <span className="text-2xl font-bold text-primary" data-testid="quote-price">
-                    ${quote.totalPrice}
+            <div className="space-y-4">
+              {/* Always show price */}
+              <div className="flex justify-between items-center p-4 bg-primary/10 rounded-lg border border-primary/20">
+                <div>
+                  <span className="text-sm text-muted-foreground">
+                    {String(quote.aiAnalysis ? 'AI-Calculated Price:' : 'Estimated Price:')}
                   </span>
+                  <div className="text-xs text-muted-foreground">
+                    {String(quote.aiAnalysis ? 'Based on photo analysis' : 'Base service pricing')}
+                  </div>
                 </div>
-              ) : (
-                <div className="flex justify-between items-center p-4 bg-muted/20 rounded-lg">
-                  <span>Price:</span>
-                  <span className="text-lg text-muted-foreground">Calculating with AI...</span>
-                </div>
-              )}
+                <span className="text-2xl font-bold text-primary" data-testid="quote-price">
+                  ${typeof quote.totalPrice === 'number' ? quote.totalPrice : 0}
+                </span>
+              </div>
               
               {/* AI Analysis Results */}
               {quote.aiAnalysis && (
                 <div className="space-y-4">
                   {(() => {
-                    const analysis = quote.aiAnalysis as AIAnalysis;
-                    return (
+                    try {
+                      const analysis = quote.aiAnalysis as AIAnalysis;
+                      return (
                   <div className="space-y-4">
                     <div className="border-t border-border pt-4">
                       <h4 className="font-semibold mb-3 text-center">🤖 AI Analysis</h4>
@@ -353,6 +364,9 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
                     </div>
                   </div>
                     );
+                    } catch (error) {
+                      return <div className="text-sm text-muted-foreground">AI analysis data unavailable</div>;
+                    }
                   })()}
                 </div>
               )}
@@ -382,17 +396,30 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
                   />
                 </div>
               </div>
-              <Button 
-                type="submit"
-                className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground py-3 font-semibold"
-                disabled={createQuoteMutation.isPending || !quote.aiAnalysis}
-                data-testid="button-send-quote"
-              >
-                {createQuoteMutation.isPending ? "Sending..." : 
-                 !quote.aiAnalysis ? "⏳ Waiting for AI Analysis..." :
-                 "📧 Send Me My AI Quote"}
-              </Button>
-            </form>
+              {/* Contact form for quote details */}
+              <div className="text-center p-4 bg-muted/10 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-2">
+                  <i className="fas fa-check-circle text-secondary mr-2"></i>
+                  Quote generated successfully!
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formData.customerName || formData.customerEmail ? 
+                    'Your quote details have been saved.' : 
+                    'Want a detailed report? Fill in your contact info above and submit for a complete analysis.'}
+                </p>
+              </div>
+              
+              {(formData.customerName || formData.customerEmail) && (
+                <Button 
+                  type="submit"
+                  className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground py-3 font-semibold"
+                  disabled={createQuoteMutation.isPending}
+                  data-testid="button-send-quote"
+                >
+                  📧 Send Detailed Quote Report
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
