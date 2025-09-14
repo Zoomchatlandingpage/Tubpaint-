@@ -6,6 +6,8 @@ import path from "path";
 import { storage } from "./storage";
 import { insertQuoteSchema, insertChatMessageSchema, insertServiceTypeSchema, insertAdminConfigSchema } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { LLMService } from "./services/llm-service.js";
+import { ImageProcessor } from "./services/image-processor.js";
 
 const upload = multer({ 
   dest: "uploads/",
@@ -97,15 +99,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const photoPath = req.file ? req.file.path : undefined;
-      
-      // Basic price calculation (in production, this would use AI analysis)
-      const totalPrice = serviceType.basePrice;
+      let totalPrice = serviceType.basePrice;
+      let aiAnalysis = null;
+
+      // AI Processing if photo is uploaded
+      if (photoPath) {
+        try {
+          // Get admin config for AI processing
+          const adminConfig = await storage.getAdminConfig();
+          
+          if (adminConfig?.llmApiKey && adminConfig?.llmProvider === 'gemini') {
+            // Validate and process image
+            const isValidImage = await ImageProcessor.validateImage(photoPath);
+            
+            if (isValidImage) {
+              // Process image for AI
+              const processedImage = await ImageProcessor.processUpload(photoPath);
+              
+              // Initialize AI service
+              const llmService = new LLMService(adminConfig.llmApiKey);
+              
+              // Analyze image with AI
+              aiAnalysis = await llmService.analyzeImage(processedImage.base64, serviceTypeId);
+              totalPrice = aiAnalysis.totalPrice;
+              
+              console.log('AI Analysis completed:', {
+                originalPrice: serviceType.basePrice,
+                aiPrice: totalPrice,
+                complexity: aiAnalysis.complexity
+              });
+            } else {
+              console.log('Invalid image, using base price');
+            }
+          } else {
+            console.log('AI not configured, using base price');
+          }
+        } catch (aiError) {
+          console.error('AI processing failed, falling back to base price:', aiError);
+          // Continue with base price if AI fails
+        }
+      }
 
       const quoteData = {
         customerEmail,
         customerName,
         serviceTypeId,
         photoPath,
+        aiAnalysis,
         totalPrice,
         status: 'pending'
       };
@@ -146,8 +186,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = req.body;
       
-      // Simple authentication (in production, use proper auth)
-      if (username === 'admin' && password === 'admin123') {
+      // Fixed admin user: Lucas Nascimento
+      if (username === 'Lucas Nascimento' && password === 'Createmsa123') {
         res.json({ success: true, token: 'admin-token' });
       } else {
         res.status(401).json({ error: 'Invalid credentials' });

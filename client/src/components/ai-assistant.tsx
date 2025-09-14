@@ -17,27 +17,27 @@ export default function AiAssistant({ onChatClick }: AiAssistantProps) {
         data-testid="ai-assistant"
       >
         {/* AI Assistant */}
-        <div className="ai-assistant animate-float w-80 h-96 bg-black rounded-2xl relative overflow-hidden border border-primary/30">
+        <div className="ai-assistant animate-float w-80 h-96 bg-card rounded-2xl relative overflow-hidden border border-primary/30 shadow-lg">
           {/* Background gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-secondary/10 to-accent/20"></div>
           
           {/* Assistant Avatar */}
           <div className="relative z-10 flex flex-col items-center justify-center h-full p-6">
             <div className="w-32 h-32 bg-gradient-to-br from-primary to-secondary rounded-full mb-6 flex items-center justify-center border-4 border-white/20 shadow-2xl">
-              <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
-                <i className="fas fa-robot text-3xl text-white"></i>
+              <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <i className="fas fa-robot text-3xl text-primary"></i>
               </div>
             </div>
             
             <div className="text-center space-y-3">
-              <h3 className="text-xl font-bold text-white">Sua Assistente AI</h3>
-              <p className="text-sm text-white/80 leading-relaxed px-4">
-                Especialista em refinamento de banheiros
+              <h3 className="text-xl font-bold text-foreground">Your AI Assistant</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed px-4">
+                Bathroom refinishing expert
               </p>
               
               <div className="flex items-center justify-center space-x-2 mt-4">
                 <div className="w-2 h-2 bg-secondary rounded-full animate-pulse"></div>
-                <span className="text-xs text-secondary font-medium">Online agora</span>
+                <span className="text-xs text-secondary font-medium">Online now</span>
               </div>
             </div>
           </div>
@@ -52,7 +52,7 @@ export default function AiAssistant({ onChatClick }: AiAssistantProps) {
         <div className={`chat-bubble absolute -left-8 top-16 max-w-xs transition-all duration-300 ${
           isHovered ? 'opacity-100 transform scale-105' : 'opacity-90'
         }`}>
-          <p className="font-medium">Oi! Pronta para transformar seu banheiro? Converse comigo!</p>
+          <p className="font-medium">Hi! Ready to transform your bathroom? Chat with me!</p>
         </div>
         
         {/* Floating Elements */}

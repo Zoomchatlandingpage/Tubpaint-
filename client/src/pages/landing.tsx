@@ -22,6 +22,12 @@ export default function LandingPage() {
     element?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleShowQuoteForm = () => {
+    setShowQuoteForm(true);
+    // Small delay to ensure component renders before scrolling
+    setTimeout(() => scrollToSection('pricing'), 100);
+  };
+
   return (
     <div className="bg-background text-foreground">
       {/* Navigation */}
@@ -89,7 +95,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 group"
-                onClick={() => setShowQuoteForm(true)}
+                onClick={handleShowQuoteForm}
                 data-testid="button-upload-photo"
               >
                 <i className="fas fa-camera"></i>
@@ -133,9 +139,9 @@ export default function LandingPage() {
       <section id="services" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">O Que Fazemos</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">What We Do</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Serviços profissionais de restauração com precisão de IA
+              Professional restoration services with AI precision
             </p>
             <div className="flex justify-center mt-8">
               <a 
@@ -143,7 +149,7 @@ export default function LandingPage() {
                 className="bg-secondary/20 hover:bg-secondary/30 text-secondary px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border border-secondary/30"
                 data-testid="link-admin-panel"
               >
-                🔧 Painel Administrativo
+                🔧 Admin Dashboard
               </a>
             </div>
           </div>
@@ -152,9 +158,9 @@ export default function LandingPage() {
             {serviceTypes.slice(0, 3).map((service, index) => {
               const icons = ["🛁", "🚿", "🏺"];
               const descriptions = [
-                "Como novo em 24 horas",
-                "Superfícies antiderrapantes", 
-                "Qualquer cor que desejar"
+                "Like new in 24 hours",
+                "Non-slip surfaces", 
+                "Any color you want"
               ];
               
               return (
@@ -164,7 +170,7 @@ export default function LandingPage() {
                     <h3 className="text-xl font-semibold mb-3">{service.name}</h3>
                     <p className="text-muted-foreground mb-4">{descriptions[index]}</p>
                     <div className="text-sm text-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      Restauração profissional
+                      Professional restoration
                     </div>
                   </CardContent>
                 </Card>

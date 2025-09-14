@@ -30,12 +30,18 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
   const { sendMessage, lastMessage } = useWebSocket(isOpen);
 
   useEffect(() => {
-    if (lastMessage?.role && lastMessage?.content && lastMessage?.timestamp) {
-      setMessages(prev => [...prev, {
-        role: lastMessage.role as 'user' | 'assistant',
+    if (lastMessage?.role && 
+        lastMessage?.content && 
+        lastMessage?.timestamp &&
+        (lastMessage.role === 'user' || lastMessage.role === 'assistant')) {
+      
+      const newMessage: ChatMessage = {
+        role: lastMessage.role,
         content: lastMessage.content,
         timestamp: lastMessage.timestamp
-      }]);
+      };
+      
+      setMessages(prev => [...prev, newMessage]);
     }
   }, [lastMessage]);
 
@@ -78,7 +84,7 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300"
+      className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all duration-300"
       onClick={onClose}
       data-testid="chat-modal-overlay"
     >
@@ -120,7 +126,7 @@ export default function ChatModal({ isOpen, onClose }: ChatModalProps) {
               )}
               <div className={`rounded-lg p-3 flex-1 ${
                 message.role === 'assistant' 
-                  ? 'bg-white/10' 
+                  ? 'bg-muted' 
                   : 'bg-primary text-primary-foreground ml-auto max-w-[80%]'
               }`}>
                 <p className="text-sm">{message.content}</p>

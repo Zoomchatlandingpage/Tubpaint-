@@ -67,3 +67,23 @@ export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 
 export type AdminConfig = typeof adminConfig.$inferSelect;
 export type InsertAdminConfig = z.infer<typeof insertAdminConfigSchema>;
+
+// AI Analysis interface for quotes
+export interface AIAnalysis {
+  totalPrice: number;
+  breakdown: {
+    basePrice: number;
+    complexityMultiplier: number;
+    additionalFees: number;
+    laborHours: number;
+  };
+  complexity: number;
+  surfaceArea: number;
+  conditionAssessment: {
+    damage: string[];
+    cleanability: string;
+    existingFinish: string;
+  };
+  recommendations: string[];
+  generatedImageUrl?: string;
+}

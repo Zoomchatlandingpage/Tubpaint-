@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { ServiceType, Quote } from "@shared/schema";
+import { ServiceType, Quote, AIAnalysis } from "@shared/schema";
 
 interface QuoteFormProps {
   serviceTypes: ServiceType[];
@@ -76,6 +76,10 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
 
   const selectedService = serviceTypes.find(s => s.id === formData.serviceTypeId);
 
+  if (!isVisible) {
+    return null;
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="text-center mb-16">
@@ -109,7 +113,7 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
                   <SelectContent>
                     {serviceTypes.map((service) => (
                       <SelectItem key={service.id} value={service.id}>
-                        {service.name} - ${service.basePrice}
+                        {service.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -138,17 +142,34 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
               
               <Button 
                 className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 font-semibold"
-                onClick={() => setQuote({ 
-                  id: 'preview', 
-                  totalPrice: selectedService?.basePrice || 0,
-                  serviceTypeId: formData.serviceTypeId,
-                  status: 'preview',
-                  createdAt: new Date()
-                } as Quote)}
+                onClick={() => {
+                  if (!selectedFile) {
+                    toast({ 
+                      title: "Photo Required", 
+                      description: "Please upload a photo to get an AI-powered quote",
+                      variant: "destructive" 
+                    });
+                    return;
+                  }
+                  
+                  // Show AI processing (without revealing price)
+                  setQuote({ 
+                    id: 'processing', 
+                    totalPrice: 0,  // No price until AI completes
+                    serviceTypeId: formData.serviceTypeId,
+                    status: 'processing',
+                    createdAt: new Date(),
+                    aiAnalysis: null
+                  } as Quote);
+                }}
                 disabled={!formData.serviceTypeId}
                 data-testid="button-generate-quote"
               >
-                Generate Quote Preview
+                <div className="flex items-center space-x-2">
+                  <i className="fas fa-robot"></i>
+                  <span>Get AI Quote</span>
+                  {!selectedFile && <span className="text-xs opacity-75">(Photo Required)</span>}
+                </div>
               </Button>
             </div>
           </CardContent>
@@ -192,20 +213,149 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
         </Card>
       </div>
       
+      {/* AI Processing Loading */}
+      {quote?.status === 'processing' && (
+        <Card className="glass-effect rounded-xl mt-8 transition-opacity duration-500">
+          <CardContent className="p-8 text-center">
+            <div className="space-y-6">
+              <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-2">🤖 AI Analyzing Your Photo</h3>
+                <p className="text-muted-foreground mb-4">
+                  Our AI is analyzing your bathroom to calculate a personalized quote...
+                </p>
+                
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-pulse">📸</div>
+                    <span>Analyzing image quality and surfaces</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-pulse">🔍</div>
+                    <span>Calculating complexity and area</span>
+                  </div>
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className="animate-pulse">✨</div>
+                    <span>Generating renovation preview</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       {/* Quote Results */}
-      {quote && (
+      {quote && quote.status !== 'processing' && (
         <Card className="glass-effect rounded-xl mt-8 transition-opacity duration-500" data-testid="quote-results">
           <CardHeader>
             <CardTitle className="text-center">Your Quote Details</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="flex justify-between items-center p-4 bg-muted/20 rounded-lg">
-                <span>Estimated Price:</span>
-                <span className="text-2xl font-bold text-primary" data-testid="quote-price">
-                  ${quote.totalPrice}
-                </span>
-              </div>
+              {/* Only show price if AI analysis is complete */}
+              {quote.aiAnalysis ? (
+                <div className="flex justify-between items-center p-4 bg-primary/10 rounded-lg border border-primary/20">
+                  <div>
+                    <span className="text-sm text-muted-foreground">AI-Calculated Price:</span>
+                    <div className="text-xs text-muted-foreground">Based on photo analysis</div>
+                  </div>
+                  <span className="text-2xl font-bold text-primary" data-testid="quote-price">
+                    ${quote.totalPrice}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex justify-between items-center p-4 bg-muted/20 rounded-lg">
+                  <span>Price:</span>
+                  <span className="text-lg text-muted-foreground">Calculating with AI...</span>
+                </div>
+              )}
+              
+              {/* AI Analysis Results */}
+              {quote.aiAnalysis && (
+                <div className="space-y-4">
+                  {(() => {
+                    const analysis = quote.aiAnalysis as AIAnalysis;
+                    return (
+                  <div className="space-y-4">
+                    <div className="border-t border-border pt-4">
+                      <h4 className="font-semibold mb-3 text-center">🤖 AI Analysis</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Analysis Details */}
+                        <div className="space-y-3">
+                          <div className="bg-muted/20 rounded-lg p-3">
+                            <div className="flex justify-between text-sm">
+                              <span>Complexity Level:</span>
+                              <span className="font-medium">{analysis.complexity}/10</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Surface Area:</span>
+                              <span className="font-medium">{analysis.surfaceArea} sq ft</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span>Labor Hours:</span>
+                              <span className="font-medium">{analysis.breakdown?.laborHours || 'N/A'}h</span>
+                            </div>
+                          </div>
+                          
+                          {analysis.recommendations && analysis.recommendations.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium mb-2">Recommendations:</p>
+                              <ul className="text-xs text-muted-foreground space-y-1">
+                                {analysis.recommendations.map((rec: string, idx: number) => (
+                                  <li key={idx}>• {rec}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Generated Preview */}
+                        <div className="space-y-3">
+                          <div className="bg-muted/20 rounded-lg p-3 text-center">
+                            <p className="text-sm font-medium mb-2">✨ Your Renovation Preview</p>
+                            
+                            {analysis.generatedImageUrl ? (
+                              <div className="relative">
+                                {analysis.generatedImageUrl.startsWith('data:text') ? (
+                                  // Text description fallback
+                                  <div className="bg-gradient-to-br from-primary/20 to-secondary/20 rounded-lg p-4 min-h-[120px] flex items-center justify-center">
+                                    <div className="text-center">
+                                      <div className="text-2xl mb-2">🛁✨</div>
+                                      <p className="text-xs text-muted-foreground">
+                                        AI visualization generated
+                                      </p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  // Actual generated image
+                                  <img 
+                                    src={analysis.generatedImageUrl} 
+                                    alt="AI-generated renovation preview"
+                                    className="w-full rounded-lg"
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              <div className="bg-muted/40 rounded-lg p-4 min-h-[120px] flex items-center justify-center">
+                                <p className="text-xs text-muted-foreground">Preview generating...</p>
+                              </div>
+                            )}
+                            
+                            <p className="text-xs text-muted-foreground mt-2">
+                              Professional refinishing result
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                    );
+                  })()}
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="customerName">Your Name</Label>
@@ -235,10 +385,12 @@ export default function QuoteForm({ serviceTypes, isVisible }: QuoteFormProps) {
               <Button 
                 type="submit"
                 className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground py-3 font-semibold"
-                disabled={createQuoteMutation.isPending}
+                disabled={createQuoteMutation.isPending || !quote.aiAnalysis}
                 data-testid="button-send-quote"
               >
-                {createQuoteMutation.isPending ? "Sending..." : "📧 Send Me My Quote"}
+                {createQuoteMutation.isPending ? "Sending..." : 
+                 !quote.aiAnalysis ? "⏳ Waiting for AI Analysis..." :
+                 "📧 Send Me My AI Quote"}
               </Button>
             </form>
           </CardContent>
