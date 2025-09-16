@@ -132,7 +132,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const adminConfig = await storage.getAdminConfig();
       
       // Simplified Gemini configuration: Use admin API key or environment variable
-      const geminiKey = adminConfig?.llmApiKey || process.env.GEMINI_API_KEY;
+      // Check for non-empty string, not just truthy value
+      const geminiKey = (adminConfig?.llmApiKey && adminConfig.llmApiKey.trim() !== '') ? adminConfig.llmApiKey : process.env.GEMINI_API_KEY;
       
       if (!geminiKey) {
         return res.status(503).json({ 

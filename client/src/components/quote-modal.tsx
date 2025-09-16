@@ -380,7 +380,7 @@ export default function QuoteModal({ isOpen, onClose, serviceTypes }: QuoteModal
                       </div>
                     </div>
                     <span className="text-3xl font-bold text-primary" data-testid="modal-quote-price">
-                      ${quote.totalPrice ? quote.totalPrice : 0}
+                      ${typeof quote.totalPrice === 'number' ? quote.totalPrice : 0}
                     </span>
                   </div>
                   

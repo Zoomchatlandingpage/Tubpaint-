@@ -29,7 +29,7 @@ export class LLMService {
 
   async analyzeImage(imageBase64: string, serviceTypeName: string): Promise<AIAnalysis> {
     try {
-      const model = this.genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const prompt = this.buildAnalysisPrompt(serviceTypeName);
       
