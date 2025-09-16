@@ -18,77 +18,78 @@ interface QuoteModalProps {
   serviceTypes: ServiceType[];
 }
 
-function AIAnalysisDisplay({ analysis }: { analysis: AIAnalysis }) {
-  try {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Analysis Metrics */}
-        <div className="space-y-3">
-          <div className="bg-background rounded-lg p-3 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Complexity Level:</span>
-              <Badge variant={analysis.complexity > 7 ? "destructive" : analysis.complexity > 4 ? "default" : "secondary"}>
-                {analysis.complexity}/10
-              </Badge>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Surface Area:</span>
-              <span className="font-medium">{analysis.surfaceArea} sq ft</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Labor Hours:</span>
-              <span className="font-medium">{analysis.breakdown?.laborHours || 'N/A'}h</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Price Breakdown */}
-        <div className="space-y-3">
-          <div className="bg-background rounded-lg p-3 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Base Price:</span>
-              <span>${analysis.breakdown?.basePrice || 0}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Complexity Adj:</span>
-              <span>${(analysis.breakdown?.complexityMultiplier || 0) - (analysis.breakdown?.basePrice || 0)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span>Additional Fees:</span>
-              <span>${analysis.breakdown?.additionalFees || 0}</span>
-            </div>
-            <Separator />
-            <div className="flex justify-between font-semibold">
-              <span>Total:</span>
-              <span>${analysis.totalPrice}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Recommendations */}
-        {analysis.recommendations && analysis.recommendations.length > 0 && (
-          <div className="mt-4 md:col-span-2">
-            <h5 className="font-medium mb-2">💡 Recommendations:</h5>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              {analysis.recommendations.map((rec, idx) => (
-                <li key={idx} className="flex items-start space-x-2">
-                  <span>•</span>
-                  <span>{rec}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    );
-  } catch (error) {
+// AIAnalysisDisplay component extracted to avoid hook call issues
+const AIAnalysisDisplay = ({ analysis }: { analysis: AIAnalysis }) => {
+  if (!analysis) {
     return (
       <div className="text-sm text-muted-foreground text-center">
         Quote generated successfully
       </div>
     );
   }
-}
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Analysis Metrics */}
+      <div className="space-y-3">
+        <div className="bg-background rounded-lg p-3 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Complexity Level:</span>
+            <Badge variant={analysis.complexity > 7 ? "destructive" : analysis.complexity > 4 ? "default" : "secondary"}>
+              {analysis.complexity}/10
+            </Badge>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Surface Area:</span>
+            <span className="font-medium">{analysis.surfaceArea} sq ft</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Labor Hours:</span>
+            <span className="font-medium">{analysis.breakdown?.laborHours || 'N/A'}h</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Price Breakdown */}
+      <div className="space-y-3">
+        <div className="bg-background rounded-lg p-3 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Base Price:</span>
+            <span>${analysis.breakdown?.basePrice || 0}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Complexity Adj:</span>
+            <span>${(analysis.breakdown?.complexityMultiplier || 0) - (analysis.breakdown?.basePrice || 0)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Additional Fees:</span>
+            <span>${analysis.breakdown?.additionalFees || 0}</span>
+          </div>
+          <Separator />
+          <div className="flex justify-between font-semibold">
+            <span>Total:</span>
+            <span>${analysis.totalPrice}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Recommendations */}
+      {analysis.recommendations && analysis.recommendations.length > 0 && (
+        <div className="mt-4 md:col-span-2">
+          <h5 className="font-medium mb-2">💡 Recommendations:</h5>
+          <ul className="text-sm text-muted-foreground space-y-1">
+            {analysis.recommendations.map((rec, idx) => (
+              <li key={idx} className="flex items-start space-x-2">
+                <span>•</span>
+                <span>{rec}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function QuoteModal({ isOpen, onClose, serviceTypes }: QuoteModalProps) {
   const [formData, setFormData] = useState({
@@ -194,8 +195,6 @@ export default function QuoteModal({ isOpen, onClose, serviceTypes }: QuoteModal
     setSearchEmail(formData.customerEmail);
     setShowHistory(true);
   };
-
-  const selectedService = serviceTypes.find(s => s.id === formData.serviceTypeId);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
