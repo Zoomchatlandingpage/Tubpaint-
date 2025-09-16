@@ -1,5 +1,11 @@
-import { type User, type InsertUser, type ServiceType, type InsertServiceType, type Quote, type InsertQuote, type ChatMessage, type InsertChatMessage, type AdminConfig, type InsertAdminConfig } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { 
+  users, serviceTypes, quotes, chatMessages, adminConfig,
+  type User, type InsertUser, type ServiceType, type InsertServiceType, 
+  type Quote, type InsertQuote, type ChatMessage, type InsertChatMessage, 
+  type AdminConfig, type InsertAdminConfig 
+} from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -28,171 +34,150 @@ export interface IStorage {
   updateAdminConfig(config: InsertAdminConfig): Promise<AdminConfig>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private serviceTypes: Map<string, ServiceType>;
-  private quotes: Map<string, Quote>;
-  private chatMessages: Map<string, ChatMessage>;
-  private adminConfig: AdminConfig | undefined;
-
+export class DatabaseStorage implements IStorage {
   constructor() {
-    this.users = new Map();
-    this.serviceTypes = new Map();
-    this.quotes = new Map();
-    this.chatMessages = new Map();
-    
-    // Initialize with default service types
-    this.initializeDefaultData();
+    // Initialize default data on first startup
+    this.initializeDefaultData().catch(console.error);
   }
 
-  private initializeDefaultData() {
-    const defaultServices: InsertServiceType[] = [
-      { name: "Bathtub Refinishing", basePrice: 450, pricePerSqft: 0, complexityMultiplier: 100, active: true },
-      { name: "Shower Refinishing", basePrice: 300, pricePerSqft: 0, complexityMultiplier: 100, active: true },
-      { name: "Tile Refinishing", basePrice: 700, pricePerSqft: 0, complexityMultiplier: 100, active: true },
-      { name: "Countertop Refinishing", basePrice: 500, pricePerSqft: 0, complexityMultiplier: 100, active: true },
-    ];
+  private async initializeDefaultData() {
+    try {
+      // Check if service types already exist
+      const existingServiceTypes = await db.select().from(serviceTypes).limit(1);
+      
+      if (existingServiceTypes.length === 0) {
+        // Initialize default service types
+        const defaultServices: InsertServiceType[] = [
+          { name: "Bathtub Refinishing", basePrice: 450, pricePerSqft: 0, complexityMultiplier: 100, active: true },
+          { name: "Shower Refinishing", basePrice: 300, pricePerSqft: 0, complexityMultiplier: 100, active: true },
+          { name: "Tile Refinishing", basePrice: 700, pricePerSqft: 0, complexityMultiplier: 100, active: true },
+          { name: "Countertop Refinishing", basePrice: 500, pricePerSqft: 0, complexityMultiplier: 100, active: true },
+        ];
 
-    defaultServices.forEach(service => {
-      const id = randomUUID();
-      this.serviceTypes.set(id, { 
-        id,
-        name: service.name,
-        basePrice: service.basePrice,
-        pricePerSqft: service.pricePerSqft || 0,
-        complexityMultiplier: service.complexityMultiplier || 100,
-        active: service.active ?? true
-      });
-    });
+        await db.insert(serviceTypes).values(defaultServices);
+      }
 
-    // Initialize default admin config
-    this.adminConfig = {
-      id: randomUUID(),
-      webhookUrl: "",
-      llmProvider: "openai",
-      llmApiKey: "",
-      assistantPrompt: "You are a helpful AI assistant for RefineAI, a bathroom refinishing company. Help customers understand our services and guide them through the quote process.",
-      updatedAt: new Date(),
-    };
+      // Check if admin config already exists
+      const existingConfig = await db.select().from(adminConfig).limit(1);
+      
+      if (existingConfig.length === 0) {
+        // Initialize default admin config
+        const defaultConfig: InsertAdminConfig = {
+          webhookUrl: null,
+          llmProvider: "openai",
+          llmApiKey: null,
+          assistantPrompt: "You are a helpful AI assistant for RefineAI, a bathroom refinishing company. Help customers understand our services and guide them through the quote process.",
+        };
+
+        await db.insert(adminConfig).values(defaultConfig);
+      }
+    } catch (error) {
+      console.error("Failed to initialize default data:", error);
+    }
   }
 
+  // Users
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
+  // Service Types
   async getServiceTypes(): Promise<ServiceType[]> {
-    return Array.from(this.serviceTypes.values()).filter(s => s.active);
+    return await db.select().from(serviceTypes).where(eq(serviceTypes.active, true));
   }
 
   async getServiceType(id: string): Promise<ServiceType | undefined> {
-    return this.serviceTypes.get(id);
+    const [serviceType] = await db.select().from(serviceTypes).where(eq(serviceTypes.id, id));
+    return serviceType || undefined;
   }
 
   async createServiceType(serviceType: InsertServiceType): Promise<ServiceType> {
-    const id = randomUUID();
-    const newServiceType: ServiceType = { 
-      id,
-      name: serviceType.name,
-      basePrice: serviceType.basePrice,
-      pricePerSqft: serviceType.pricePerSqft || 0,
-      complexityMultiplier: serviceType.complexityMultiplier || 100,
-      active: serviceType.active ?? true
-    };
-    this.serviceTypes.set(id, newServiceType);
+    const [newServiceType] = await db.insert(serviceTypes).values(serviceType).returning();
     return newServiceType;
   }
 
   async updateServiceType(id: string, serviceType: Partial<InsertServiceType>): Promise<ServiceType | undefined> {
-    const existing = this.serviceTypes.get(id);
-    if (!existing) return undefined;
-    
-    const updated = { ...existing, ...serviceType };
-    this.serviceTypes.set(id, updated);
-    return updated;
+    const [updated] = await db
+      .update(serviceTypes)
+      .set(serviceType)
+      .where(eq(serviceTypes.id, id))
+      .returning();
+    return updated || undefined;
   }
 
+  // Quotes
   async getQuotes(): Promise<Quote[]> {
-    return Array.from(this.quotes.values()).sort((a, b) => 
-      new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-    );
+    return await db.select().from(quotes).orderBy(desc(quotes.createdAt));
   }
 
   async getQuote(id: string): Promise<Quote | undefined> {
-    return this.quotes.get(id);
+    const [quote] = await db.select().from(quotes).where(eq(quotes.id, id));
+    return quote || undefined;
   }
 
   async createQuote(quote: InsertQuote): Promise<Quote> {
-    const id = randomUUID();
-    const newQuote: Quote = { 
-      id,
-      customerEmail: quote.customerEmail || null,
-      customerName: quote.customerName || null,
-      serviceTypeId: quote.serviceTypeId || null,
-      photoPath: quote.photoPath || null,
-      aiAnalysis: quote.aiAnalysis || null,
-      totalPrice: quote.totalPrice || null,
-      status: quote.status || 'pending',
-      createdAt: new Date() 
-    };
-    this.quotes.set(id, newQuote);
+    const [newQuote] = await db.insert(quotes).values(quote).returning();
     return newQuote;
   }
 
   async updateQuote(id: string, quote: Partial<InsertQuote>): Promise<Quote | undefined> {
-    const existing = this.quotes.get(id);
-    if (!existing) return undefined;
-    
-    const updated = { ...existing, ...quote };
-    this.quotes.set(id, updated);
-    return updated;
+    const [updated] = await db
+      .update(quotes)
+      .set(quote)
+      .where(eq(quotes.id, id))
+      .returning();
+    return updated || undefined;
   }
 
+  // Chat Messages
   async getChatMessages(sessionId: string): Promise<ChatMessage[]> {
-    return Array.from(this.chatMessages.values())
-      .filter(msg => msg.sessionId === sessionId)
-      .sort((a, b) => new Date(a.timestamp!).getTime() - new Date(b.timestamp!).getTime());
+    return await db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.sessionId, sessionId))
+      .orderBy(chatMessages.timestamp);
   }
 
   async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
-    const id = randomUUID();
-    const newMessage: ChatMessage = { 
-      ...message, 
-      id, 
-      timestamp: new Date() 
-    };
-    this.chatMessages.set(id, newMessage);
+    const [newMessage] = await db.insert(chatMessages).values(message).returning();
     return newMessage;
   }
 
+  // Admin Config
   async getAdminConfig(): Promise<AdminConfig | undefined> {
-    return this.adminConfig;
+    const [config] = await db.select().from(adminConfig).limit(1);
+    return config || undefined;
   }
 
   async updateAdminConfig(config: InsertAdminConfig): Promise<AdminConfig> {
-    const id = this.adminConfig?.id || randomUUID();
-    this.adminConfig = { 
-      id,
-      webhookUrl: config.webhookUrl || null,
-      llmProvider: config.llmProvider || 'openai',
-      llmApiKey: config.llmApiKey || null,
-      assistantPrompt: config.assistantPrompt || null,
-      updatedAt: new Date() 
-    };
-    return this.adminConfig;
+    // Get existing config
+    const existing = await this.getAdminConfig();
+    
+    if (existing) {
+      // Update existing config
+      const [updated] = await db
+        .update(adminConfig)
+        .set(config)
+        .where(eq(adminConfig.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      // Create new config if none exists
+      const [newConfig] = await db.insert(adminConfig).values(config).returning();
+      return newConfig;
+    }
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
