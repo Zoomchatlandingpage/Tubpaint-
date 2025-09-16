@@ -2,16 +2,15 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import AiAssistant from "@/components/ai-assistant";
 import ChatModal from "@/components/chat-modal";
-import QuoteForm from "@/components/quote-form";
+import QuoteModal from "@/components/quote-modal";
 import FloatingChatButton from "@/components/floating-chat-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { ServiceType } from "@shared/schema";
 
 export default function LandingPage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [showQuoteForm, setShowQuoteForm] = useState(false);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
   const { data: serviceTypes = [] } = useQuery<ServiceType[]>({
     queryKey: ['/api/service-types']
@@ -22,10 +21,8 @@ export default function LandingPage() {
     element?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleShowQuoteForm = () => {
-    setShowQuoteForm(true);
-    // Small delay to ensure component renders before scrolling
-    setTimeout(() => scrollToSection('pricing'), 100);
+  const handleOpenQuoteModal = () => {
+    setIsQuoteModalOpen(true);
   };
 
   return (
@@ -82,7 +79,7 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Button 
                 className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 group"
-                onClick={handleShowQuoteForm}
+                onClick={handleOpenQuoteModal}
                 data-testid="button-upload-photo"
               >
                 <i className="fas fa-camera"></i>
@@ -161,7 +158,48 @@ export default function LandingPage() {
 
       {/* Pricing Section */}
       <section id="pricing" className="py-20">
-        <QuoteForm serviceTypes={serviceTypes} isVisible={showQuoteForm} />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-8">Get Your AI-Powered Quote</h2>
+          <p className="text-xl text-muted-foreground mb-12">
+            Upload a photo of your bathroom and get instant pricing with our AI technology
+          </p>
+          
+          <Card className="glass-effect rounded-xl p-8 mb-8">
+            <CardContent className="p-0">
+              <div className="space-y-6">
+                <div className="text-6xl mb-4">📸</div>
+                <h3 className="text-2xl font-semibold mb-4">Ready to Transform Your Space?</h3>
+                <p className="text-muted-foreground mb-6">
+                  Our AI analyzes your photos to provide accurate pricing and renovation previews
+                </p>
+                <Button 
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-4 text-xl font-semibold"
+                  onClick={handleOpenQuoteModal}
+                  data-testid="pricing-button-get-quote"
+                >
+                  <i className="fas fa-camera mr-3"></i>
+                  Upload Photo & Get Quote
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center space-x-2">
+              <i className="fas fa-clock text-primary"></i>
+              <span>Instant AI Analysis</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <i className="fas fa-shield-alt text-primary"></i>
+              <span>Secure & Private</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <i className="fas fa-money-bill-wave text-primary"></i>
+              <span>No Hidden Fees</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Contact Section */}
@@ -204,6 +242,13 @@ export default function LandingPage() {
 
       {/* Chat Modal */}
       <ChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+
+      {/* Quote Modal */}
+      <QuoteModal 
+        isOpen={isQuoteModalOpen} 
+        onClose={() => setIsQuoteModalOpen(false)}
+        serviceTypes={serviceTypes}
+      />
 
       {/* Floating Chat Button */}
       <FloatingChatButton onClick={() => setIsChatOpen(true)} />

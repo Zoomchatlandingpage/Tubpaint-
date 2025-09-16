@@ -5,7 +5,7 @@ import {
   type AdminConfig, type InsertAdminConfig 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, or, ilike } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -22,6 +22,7 @@ export interface IStorage {
   // Quotes
   getQuotes(): Promise<Quote[]>;
   getQuote(id: string): Promise<Quote | undefined>;
+  searchQuotes(email?: string, name?: string): Promise<Quote[]>;
   createQuote(quote: InsertQuote): Promise<Quote>;
   updateQuote(id: string, quote: Partial<InsertQuote>): Promise<Quote | undefined>;
 
@@ -124,6 +125,29 @@ export class DatabaseStorage implements IStorage {
   async getQuote(id: string): Promise<Quote | undefined> {
     const [quote] = await db.select().from(quotes).where(eq(quotes.id, id));
     return quote || undefined;
+  }
+
+  async searchQuotes(email?: string, name?: string): Promise<Quote[]> {
+    const conditions = [];
+    if (email) {
+      conditions.push(ilike(quotes.customerEmail, `%${email}%`));
+    }
+    if (name) {
+      conditions.push(ilike(quotes.customerName, `%${name}%`));
+    }
+    
+    if (conditions.length > 0) {
+      return await db
+        .select()
+        .from(quotes)
+        .where(or(...conditions))
+        .orderBy(desc(quotes.createdAt));
+    } else {
+      return await db
+        .select()
+        .from(quotes)
+        .orderBy(desc(quotes.createdAt));
+    }
   }
 
   async createQuote(quote: InsertQuote): Promise<Quote> {

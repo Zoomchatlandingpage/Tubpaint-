@@ -85,6 +85,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/quotes/search', async (req, res) => {
+    try {
+      const { email, name } = req.query;
+      
+      if (!email && !name) {
+        return res.status(400).json({ error: 'Email or name parameter is required' });
+      }
+
+      const quotes = await storage.searchQuotes(
+        typeof email === 'string' ? email : undefined,
+        typeof name === 'string' ? name : undefined
+      );
+      
+      res.json(quotes);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to search quotes' });
+    }
+  });
+
   app.post('/api/quotes', upload.single('photo'), async (req, res) => {
     try {
       const { customerEmail, customerName, serviceTypeId } = req.body;
