@@ -12,7 +12,7 @@ export const users = pgTable("users", {
 export const serviceTypes = pgTable("service_types", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
-  basePrice: integer("base_price").notNull(),
+  basePrice: integer("base_price"), // Nullable - preços são calculados dinamicamente via LLM
   pricePerSqft: integer("price_per_sqft").default(0),
   complexityMultiplier: integer("complexity_multiplier").default(100),
   active: boolean("active").default(true),

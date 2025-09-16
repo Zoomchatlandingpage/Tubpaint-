@@ -112,55 +112,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Service type is required' });
       }
 
+      // Sistema 100% dinâmico: FOTO É OBRIGATÓRIA para análise LLM
+      if (!req.file) {
+        return res.status(400).json({ 
+          error: 'Photo is required for dynamic pricing analysis. Please upload a photo of the area to be refinished.' 
+        });
+      }
+
       const serviceType = await storage.getServiceType(serviceTypeId);
       if (!serviceType) {
         return res.status(400).json({ error: 'Invalid service type' });
       }
 
-      const photoPath = req.file ? req.file.path : undefined;
-      let totalPrice = serviceType.basePrice;
-      let aiAnalysis = null;
+      const photoPath = req.file.path;
+      let totalPrice: number;
+      let aiAnalysis: any;
 
-      // AI Processing if photo is uploaded
-      if (photoPath) {
-        try {
-          // Get admin config for AI processing
-          const adminConfig = await storage.getAdminConfig();
-          
-          // Use admin config API key or fallback to environment variable
-          const geminiKey = adminConfig?.llmApiKey || process.env.GEMINI_API_KEY;
-          const isGeminiProvider = adminConfig?.llmProvider === 'gemini' || (!adminConfig?.llmProvider && process.env.GEMINI_API_KEY);
-          
-          if (geminiKey && isGeminiProvider) {
-            // Validate and process image
-            const isValidImage = await ImageProcessor.validateImage(photoPath);
-            
-            if (isValidImage) {
-              // Process image for AI
-              const processedImage = await ImageProcessor.processUpload(photoPath);
-              
-              // Initialize AI service
-              const llmService = new LLMService(geminiKey);
-              
-              // Analyze image with AI
-              aiAnalysis = await llmService.analyzeImage(processedImage.base64, serviceTypeId);
-              totalPrice = aiAnalysis.totalPrice;
-              
-              console.log('AI Analysis completed:', {
-                originalPrice: serviceType.basePrice,
-                aiPrice: totalPrice,
-                complexity: aiAnalysis.complexity
-              });
-            } else {
-              console.log('Invalid image, using base price');
-            }
-          } else {
-            console.log('AI not configured, using base price');
-          }
-        } catch (aiError) {
-          console.error('AI processing failed, falling back to base price:', aiError);
-          // Continue with base price if AI fails
-        }
+      // Get admin config for AI processing
+      const adminConfig = await storage.getAdminConfig();
+      
+      // Simplified Gemini configuration: Use admin API key or environment variable
+      const geminiKey = adminConfig?.llmApiKey || process.env.GEMINI_API_KEY;
+      
+      if (!geminiKey) {
+        return res.status(503).json({ 
+          error: 'AI pricing service not configured. GEMINI_API_KEY is required for dynamic pricing analysis.' 
+        });
+      }
+
+      // Validate and process image (OBRIGATÓRIO para sistema dinâmico)
+      const isValidImage = await ImageProcessor.validateImage(photoPath);
+      
+      if (!isValidImage) {
+        return res.status(400).json({ 
+          error: 'Invalid image format. Please upload a clear photo of the area to be refinished.' 
+        });
+      }
+
+      // Process image for AI
+      const processedImage = await ImageProcessor.processUpload(photoPath);
+      
+      // Initialize AI service and analyze image (SEM fallbacks)
+      const llmService = new LLMService(geminiKey);
+      
+      try {
+        // Analyze image with AI - ÚNICA fonte de precificação
+        // CRITICAL: Pass readable service name instead of UUID for LLM analysis
+        aiAnalysis = await llmService.analyzeImage(processedImage.base64, serviceType.name);
+        totalPrice = aiAnalysis.totalPrice;
+        
+        console.log('Dynamic AI Pricing completed:', {
+          serviceType: serviceType.name,
+          dynamicPrice: totalPrice,
+          complexity: aiAnalysis.complexity,
+          surfaceArea: aiAnalysis.surfaceArea
+        });
+        
+      } catch (aiError) {
+        console.error('AI pricing analysis failed:', aiError);
+        return res.status(503).json({ 
+          error: 'Failed to analyze image for pricing. Please try again with a clearer photo or contact support.',
+          details: aiError instanceof Error ? aiError.message : 'AI analysis error'
+        });
       }
 
       const quoteData = {

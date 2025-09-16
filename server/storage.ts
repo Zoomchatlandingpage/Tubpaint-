@@ -47,12 +47,12 @@ export class DatabaseStorage implements IStorage {
       const existingServiceTypes = await db.select().from(serviceTypes).limit(1);
       
       if (existingServiceTypes.length === 0) {
-        // Initialize default service types
+        // Initialize default service types (sem preços fixos - calculados dinamicamente via LLM)
         const defaultServices: InsertServiceType[] = [
-          { name: "Bathtub Refinishing", basePrice: 450, pricePerSqft: 0, complexityMultiplier: 100, active: true },
-          { name: "Shower Refinishing", basePrice: 300, pricePerSqft: 0, complexityMultiplier: 100, active: true },
-          { name: "Tile Refinishing", basePrice: 700, pricePerSqft: 0, complexityMultiplier: 100, active: true },
-          { name: "Countertop Refinishing", basePrice: 500, pricePerSqft: 0, complexityMultiplier: 100, active: true },
+          { name: "Bathtub Refinishing", basePrice: null, pricePerSqft: 0, complexityMultiplier: 100, active: true },
+          { name: "Shower Refinishing", basePrice: null, pricePerSqft: 0, complexityMultiplier: 100, active: true },
+          { name: "Tile Refinishing", basePrice: null, pricePerSqft: 0, complexityMultiplier: 100, active: true },
+          { name: "Countertop Refinishing", basePrice: null, pricePerSqft: 0, complexityMultiplier: 100, active: true },
         ];
 
         await db.insert(serviceTypes).values(defaultServices);
