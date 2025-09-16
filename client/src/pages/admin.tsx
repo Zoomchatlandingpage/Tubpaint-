@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { ServiceType, Quote, AdminConfig } from "@shared/schema";
+import { Save, AlertCircle } from "lucide-react";
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
+  const [configDraft, setConfigDraft] = useState<Partial<AdminConfig>>({});
+  const [serviceTypesDraft, setServiceTypesDraft] = useState<{ [key: string]: Partial<ServiceType> }>({});
+  const [hasUnsavedConfigChanges, setHasUnsavedConfigChanges] = useState(false);
+  const [hasUnsavedServiceChanges, setHasUnsavedServiceChanges] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -54,7 +59,12 @@ export default function AdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/config'] });
+      setHasUnsavedConfigChanges(false);
+      setConfigDraft({});
       toast({ title: "Configuration updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update configuration", variant: "destructive" });
     }
   });
 
@@ -65,7 +75,12 @@ export default function AdminPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/service-types'] });
+      setHasUnsavedServiceChanges(false);
+      setServiceTypesDraft({});
       toast({ title: "Service type updated successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update service type", variant: "destructive" });
     }
   });
 
@@ -74,9 +89,37 @@ export default function AdminPage() {
     loginMutation.mutate(loginForm);
   };
 
-  const handleConfigUpdate = (field: string, value: string) => {
-    if (!config) return;
-    updateConfigMutation.mutate({ ...config, [field]: value });
+  // Initialize config draft when server config loads
+  useEffect(() => {
+    if (config && Object.keys(configDraft).length === 0) {
+      setConfigDraft(config);
+    }
+  }, [config, configDraft]);
+
+  const handleConfigDraftChange = (field: string, value: string) => {
+    setConfigDraft(prev => ({ ...prev, [field]: value }));
+    setHasUnsavedConfigChanges(true);
+  };
+
+  const handleSaveConfig = () => {
+    updateConfigMutation.mutate(configDraft);
+  };
+
+  const handleServiceTypeDraftChange = (id: string, field: string, value: any) => {
+    setServiceTypesDraft(prev => ({
+      ...prev,
+      [id]: { ...prev[id], [field]: value }
+    }));
+    setHasUnsavedServiceChanges(true);
+  };
+
+  const handleSaveServiceTypes = () => {
+    const updates = Object.entries(serviceTypesDraft).map(([id, data]) => ({ id, data }));
+    Promise.all(updates.map(update => updateServiceTypeMutation.mutateAsync(update)));
+  };
+
+  const getServiceTypeValue = (serviceId: string, field: keyof ServiceType, originalValue: any) => {
+    return (serviceTypesDraft[serviceId] as any)?.[field] ?? originalValue;
   };
 
   if (!isAuthenticated) {
@@ -187,8 +230,31 @@ export default function AdminPage() {
 
           <TabsContent value="services">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle>Service Types</CardTitle>
+                {hasUnsavedServiceChanges && (
+                  <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1 text-amber-600">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">Unsaved changes</span>
+                    </div>
+                    <Button
+                      onClick={handleSaveServiceTypes}
+                      disabled={updateServiceTypeMutation.isPending}
+                      size="sm"
+                      data-testid="button-save-services"
+                    >
+                      {updateServiceTypeMutation.isPending ? (
+                        "Saving..."
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-1" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -196,16 +262,13 @@ export default function AdminPage() {
                     <div key={service.id} className="flex items-center justify-between p-4 border rounded-lg" data-testid={`service-type-${service.id}`}>
                       <div>
                         <h3 className="font-semibold">{service.name}</h3>
-                        <p className="text-muted-foreground">Base Price: ${service.basePrice}</p>
+                        <p className="text-muted-foreground">Base Price: ${getServiceTypeValue(service.id, 'basePrice', service.basePrice)}</p>
                       </div>
                       <div className="flex items-center space-x-2">
                         <Input
                           type="number"
-                          value={service.basePrice}
-                          onChange={(e) => updateServiceTypeMutation.mutate({
-                            id: service.id,
-                            data: { basePrice: parseInt(e.target.value) }
-                          })}
+                          value={getServiceTypeValue(service.id, 'basePrice', service.basePrice)}
+                          onChange={(e) => handleServiceTypeDraftChange(service.id, 'basePrice', parseInt(e.target.value))}
                           className="w-24"
                           data-testid={`input-price-${service.id}`}
                         />
@@ -221,13 +284,19 @@ export default function AdminPage() {
           <TabsContent value="config">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle>AI Configuration</CardTitle>
+                  {hasUnsavedConfigChanges && (
+                    <div className="flex items-center space-x-1 text-amber-600">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">Unsaved changes</span>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="llmProvider">LLM Provider</Label>
-                    <Select value={config?.llmProvider || 'openai'} onValueChange={(value) => handleConfigUpdate('llmProvider', value)}>
+                    <Select value={configDraft.llmProvider || 'openai'} onValueChange={(value) => handleConfigDraftChange('llmProvider', value)}>
                       <SelectTrigger data-testid="select-llm-provider">
                         <SelectValue placeholder="Select LLM Provider" />
                       </SelectTrigger>
@@ -243,8 +312,8 @@ export default function AdminPage() {
                     <Input
                       id="llmApiKey"
                       type="password"
-                      value={config?.llmApiKey || ""}
-                      onChange={(e) => handleConfigUpdate('llmApiKey', e.target.value)}
+                      value={configDraft.llmApiKey || ""}
+                      onChange={(e) => handleConfigDraftChange('llmApiKey', e.target.value)}
                       placeholder="Enter API Key"
                       data-testid="input-api-key"
                     />
@@ -253,27 +322,49 @@ export default function AdminPage() {
                     <Label htmlFor="assistantPrompt">Assistant Prompt</Label>
                     <Textarea
                       id="assistantPrompt"
-                      value={config?.assistantPrompt || ""}
-                      onChange={(e) => handleConfigUpdate('assistantPrompt', e.target.value)}
+                      value={configDraft.assistantPrompt || ""}
+                      onChange={(e) => handleConfigDraftChange('assistantPrompt', e.target.value)}
                       placeholder="Enter assistant prompt..."
                       rows={4}
                       data-testid="textarea-assistant-prompt"
                     />
                   </div>
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      onClick={handleSaveConfig}
+                      disabled={updateConfigMutation.isPending || !hasUnsavedConfigChanges}
+                      data-testid="button-save-ai-config"
+                    >
+                      {updateConfigMutation.isPending ? (
+                        "Saving..."
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save AI Configuration
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle>Webhook Configuration</CardTitle>
+                  {hasUnsavedConfigChanges && (
+                    <div className="flex items-center space-x-1 text-amber-600">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-sm">Unsaved changes</span>
+                    </div>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="webhookUrl">n8n Webhook URL</Label>
                     <Input
                       id="webhookUrl"
-                      value={config?.webhookUrl || ""}
-                      onChange={(e) => handleConfigUpdate('webhookUrl', e.target.value)}
+                      value={configDraft.webhookUrl || ""}
+                      onChange={(e) => handleConfigDraftChange('webhookUrl', e.target.value)}
                       placeholder="https://your-n8n-instance.com/webhook/..."
                       data-testid="input-webhook-url"
                     />
@@ -286,6 +377,22 @@ export default function AdminPage() {
                       <li>• Chat interactions</li>
                       <li>• Quote status updates</li>
                     </ul>
+                  </div>
+                  <div className="flex justify-end pt-4">
+                    <Button
+                      onClick={handleSaveConfig}
+                      disabled={updateConfigMutation.isPending || !hasUnsavedConfigChanges}
+                      data-testid="button-save-webhook-config"
+                    >
+                      {updateConfigMutation.isPending ? (
+                        "Saving..."
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Webhook Configuration
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>

@@ -108,7 +108,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get admin config for AI processing
           const adminConfig = await storage.getAdminConfig();
           
-          if (adminConfig?.llmApiKey && adminConfig?.llmProvider === 'gemini') {
+          // Use admin config API key or fallback to environment variable
+          const geminiKey = adminConfig?.llmApiKey || process.env.GEMINI_API_KEY;
+          const isGeminiProvider = adminConfig?.llmProvider === 'gemini' || (!adminConfig?.llmProvider && process.env.GEMINI_API_KEY);
+          
+          if (geminiKey && isGeminiProvider) {
             // Validate and process image
             const isValidImage = await ImageProcessor.validateImage(photoPath);
             
@@ -117,7 +121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const processedImage = await ImageProcessor.processUpload(photoPath);
               
               // Initialize AI service
-              const llmService = new LLMService(adminConfig.llmApiKey);
+              const llmService = new LLMService(geminiKey);
               
               // Analyze image with AI
               aiAnalysis = await llmService.analyzeImage(processedImage.base64, serviceTypeId);
