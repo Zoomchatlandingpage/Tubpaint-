@@ -146,7 +146,7 @@ export class LLMService {
   async generateRenovatedPreview(originalImageBase64: string, analysis: AIAnalysis): Promise<string> {
     try {
       // Use Gemini's image generation capabilities
-      const model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const imagePrompt = `
       Create a professional bathroom renovation visualization prompt based on this analysis:
