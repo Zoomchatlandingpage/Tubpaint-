@@ -1,157 +1,290 @@
-# Projeto RefineAI - Alteração de Tema Escuro para Claro
+# Tubpaint - Plano de Transformação em Máquina de Vendas Viral
 
-## Problema
-O usuário reportou que a cor escura atual da página está deixando a experiência cansativa e menos atrativa. Precisa alterar para um modelo com cores mais claras.
-
-## Arquivos Identificados que Precisam de Alteração
-
-1. **client/src/index.css** - Arquivo principal de estilos globais com variáveis CSS para tema escuro
-2. **client/src/components/ai-assistant.tsx** - Componente com fundo preto explícito (`bg-black`)
-3. **client/src/pages/landing.tsx** - Vários elementos com backgrounds escuros
-4. **client/src/components/chat-modal.tsx** - Modal com overlay escuro
-
-## Plano de Implementação
-
-### ✅ Tarefa 1: Analisar estrutura atual de cores
-- [x] Identificar todas as variáveis CSS em index.css
-- [x] Mapear componentes com cores escuras hardcoded
-- [x] Entender sistema de cores atual
-
-### ⏳ Tarefa 2: Atualizar variáveis CSS globais (index.css)
-- [ ] Alterar --background de escuro para claro
-- [ ] Alterar --foreground de claro para escuro
-- [ ] Ajustar --card, --popover e outros componentes base
-- [ ] Manter cores primárias (purple) e secundárias (teal) vibrantes
-- [ ] Ajustar --muted, --border e --input para tons claros
-
-### ⏳ Tarefa 3: Corrigir componente AI Assistant
-- [ ] Remover `bg-black` e usar variável CSS apropriada
-- [ ] Ajustar gradientes para funcionar em tema claro
-- [ ] Manter contrast ratio adequado para acessibilidade
-
-### ⏳ Tarefa 4: Ajustar elementos com overlay escuro
-- [ ] Chat modal overlay (`bg-black/50` → `bg-white/50` ou similar)
-- [ ] Outros overlays e modais escuros
-
-### ⏳ Tarefa 5: Remover/ajustar gradiente escuro do body
-- [ ] Alterar gradiente linear do body para tons claros
-- [ ] Manter efeitos visuais mas com cores claras
-
-### ⏳ Tarefa 6: Testar e verificar consistência
-- [ ] Verificar contraste de texto em todos os componentes
-- [ ] Testar responsividade
-- [ ] Verificar acessibilidade (contrast ratio)
-- [ ] Garantir que elementos interativos são visíveis
-
-## Objetivos
-- Manter identidade visual das cores primárias (roxo, teal, pink)
-- Garantir boa legibilidade e contraste
-- Criar experiência mais leve e atrativa
-- Preservar todos os efeitos visuais e animações existentes
-
-## Notas Técnicas
-- Sistema usa CSS Variables + Tailwind CSS
-- Componentes UI usam shadcn/ui (já preparado para temas)
-- Mudanças principalmente em :root {} e alguns hardcoded backgrounds
+**Data de Início**: 2026-01-16
+**Branch de Desenvolvimento**: `claude/project-structure-setup-zNLRt`
+**Objetivo**: Transformar o Tubpaint em uma landing page minimalista, focada em conversão, com sistema de tracking de campanhas virais e dashboard admin inteligente.
 
 ---
 
-**Status:** ✅ CONCLUÍDO
+## 📋 ANÁLISE DA SITUAÇÃO ATUAL
 
-## Review Summary
+### ✅ O que já funciona bem:
+- Sistema de cotação com IA (Gemini) completamente funcional
+- Schema de banco de dados limpo (Drizzle ORM + PostgreSQL)
+- Stack moderno (React 18, TypeScript, Tailwind CSS)
+- Upload e processamento de imagens otimizado
+- Preços dinâmicos baseados em análise de imagem
 
-### Alteração para Tema Claro Concluída com Sucesso
+### 🔄 O que precisa ser transformado:
+- **Landing page complexa demais** (257 linhas, muita informação)
+- **47 componentes UI shadcn** (maioria não usada)
+- **Funcionalidade duplicada** (quote-form.tsx + quote-modal.tsx)
+- **Chat incompleto** (não conectado ao LLM)
+- **Admin básico** (sem métricas de campanhas)
+- **Sem sistema de tracking** (parâmetros de URL para A/B testing)
+- **Sem sistema de prompts** (para personas do vendedor)
 
-Todas as alterações para converter o tema escuro em tema claro foram implementadas com sucesso. A aplicação agora apresenta uma interface mais leve e atrativa conforme solicitado.
+---
 
-### Arquivos Modificados
-1. **`client/src/index.css`** - Variáveis CSS globais e estilos de componentes
-2. **`client/src/components/ai-assistant.tsx`** - Componente do assistente AI
-3. **`client/src/components/chat-modal.tsx`** - Modal de chat
-4. **`client/src/pages/not-found.tsx`** - Página 404
+## 🎯 ESTRUTURA DE TRABALHO (3 PERFIS DE ESPECIALISTAS)
 
-### Alterações Específicas Realizadas
+### 1️⃣ DESENVOLVEDOR FULL-STACK (Backend & Dashboard Admin)
+**Foco**: Segurança, banco de dados, métricas de campanha
 
-#### Variáveis CSS Globais (index.css):
-- **--background**: `hsl(240, 10%, 3.9%)` → `hsl(0, 0%, 98%)` (escuro para claro)
-- **--foreground**: `hsl(0, 0%, 98%)` → `hsl(240, 10%, 3.9%)` (claro para escuro)
-- **--card**: `hsl(240, 10%, 3.9%)` → `hsl(0, 0%, 100%)` (fundo branco)
-- **--muted**: `hsl(240, 3.7%, 15.9%)` → `hsl(0, 0%, 96%)` (cinza claro)
-- **--border**: `hsl(240, 3.7%, 15.9%)` → `hsl(240, 5.9%, 90%)` (bordas claras)
-- **--input**: `hsl(240, 3.7%, 15.9%)` → `hsl(240, 5.9%, 90%)` (campos de entrada claros)
-- **Cores primárias mantidas**: Roxo, teal e pink preservadas para identidade visual
+### 2️⃣ ENGENHEIRO DE IA (Integração LLM & Prompts)
+**Foco**: Sistema de prompts, chat inteligente, automação
 
-#### Gradiente do Body:
-- Alterado de gradiente escuro para gradiente claro com tons suaves de roxo
-- `linear-gradient(135deg, hsl(0, 0%, 98%) 0%, hsl(263, 90%, 95%) 50%, hsl(0, 0%, 98%) 100%)`
+### 3️⃣ DESENVOLVEDOR FRONTEND/UX (Conversão & Marketing Viral)
+**Foco**: Landing page minimalista, tracking, A/B testing
 
-#### Componente AI Assistant:
-- **Fundo**: `bg-black` → `bg-card` (usar variável CSS)
-- **Texto**: `text-white` → `text-foreground` (usar variável CSS)
-- **Ícone**: `text-white` → `text-primary` (roxo para contraste)
-- **Descrição**: `text-white/80` → `text-muted-foreground` (cinza apropriado)
+---
 
-#### Chat Modal:
-- **Overlay**: `bg-black/50` → `bg-black/20` (overlay mais sutil)
-- **Mensagens do assistente**: `bg-white/10` → `bg-muted` (fundo cinza claro)
+## 📝 TAREFAS POR PERFIL
 
-#### Efeitos Glass:
-- **Glass effect**: Atualizado para funcionar com tema claro (`bg-white/80`)
-- **Chat bubble**: Sombra suavizada e borda adicionada para melhor definição
+## 🟦 PERFIL 1: FULL-STACK (Backend & Admin Dashboard)
 
-#### Página 404:
-- **Fundo**: `bg-gray-50` → `bg-background` (usar variável CSS)
+### Fase 1.1: Segurança e Autenticação
+- [ ] **1.1.1** Substituir autenticação hardcoded por sistema JWT seguro
+- [ ] **1.1.2** Criar middleware de autenticação para rotas admin
+- [ ] **1.1.3** Implementar hash de senha com bcrypt
+- [ ] **1.1.4** Adicionar endpoint de logout e refresh token
 
-### Verificações de Qualidade Realizadas
-✅ Build da aplicação executado com sucesso  
-✅ Cores primárias (roxo, teal, pink) preservadas  
-✅ Contraste adequado mantido para acessibilidade  
-✅ Efeitos visuais e animações preservados  
-✅ Todos os componentes adaptados para tema claro  
-✅ Variáveis CSS utilizadas para consistência  
+### Fase 1.2: Banco de Dados - Tracking de Campanhas
+- [ ] **1.2.1** Criar tabela `campaigns` (id, name, source, utmParams, active, createdAt)
+- [ ] **1.2.2** Criar tabela `quote_sources` (id, quoteId, campaignId, urlParams, ip, userAgent, timestamp)
+- [ ] **1.2.3** Adicionar campo `sourceUrl` e `referrer` na tabela `quotes`
+- [ ] **1.2.4** Criar migration para novas tabelas
+- [ ] **1.2.5** Atualizar schema Drizzle com novas tabelas
 
-### Resultado Final
-- **Interface mais clara e atrativa**: Fundo claro reduz cansaço visual
-- **Identidade visual mantida**: Cores de marca preservadas
-- **Experiência melhorada**: Visual mais limpo e profissional
-- **Compatibilidade completa**: Todos os componentes funcionando corretamente
-- **Zero breaking changes**: Funcionalidade mantida integralmente
+### Fase 1.3: API - Tracking e Métricas
+- [ ] **1.3.1** Criar endpoint `POST /api/track/pageview` (captura origem, UTM params)
+- [ ] **1.3.2** Criar endpoint `POST /api/track/quote` (associa quote com campanha)
+- [ ] **1.3.3** Criar endpoint `GET /api/admin/campaigns` (lista todas campanhas)
+- [ ] **1.3.4** Criar endpoint `GET /api/admin/campaigns/:id/metrics` (leads, conversão, receita)
+- [ ] **1.3.5** Criar endpoint `POST /api/admin/campaigns` (criar nova campanha)
+- [ ] **1.3.6** Criar endpoint `GET /api/admin/analytics/summary` (métricas globais)
 
-A aplicação está agora com tema claro conforme solicitado, oferecendo uma experiência visual mais leve e atrativa para os usuários.
-All Portuguese text content in the user interface has been successfully translated to English. The application is now fully in English as requested.
+### Fase 1.4: Dashboard Admin - Nova Aba "Campanhas"
+- [ ] **1.4.1** Criar componente `CampaignMetrics.tsx` (tabela de campanhas com métricas)
+- [ ] **1.4.2** Adicionar cards de métricas: Total Leads, Taxa de Conversão, Receita
+- [ ] **1.4.3** Criar gráfico de linha (leads por data) usando Recharts
+- [ ] **1.4.4** Adicionar tabela com: Campanha | Origem | Leads | Conversão | Receita
+- [ ] **1.4.5** Implementar filtro por data (última semana, mês, custom)
+- [ ] **1.4.6** Adicionar botão "Nova Campanha" com modal de criação
 
-### Files Modified
-1. **`client/src/pages/landing.tsx`** - 7 Portuguese text instances translated
-2. **`client/src/components/ai-assistant.tsx`** - 4 Portuguese text instances translated
+### Fase 1.5: Dashboard Admin - Melhorias na Aba "Quotes"
+- [ ] **1.5.1** Adicionar coluna "Origem da Campanha" na tabela de quotes
+- [ ] **1.5.2** Adicionar filtro por campanha/origem
+- [ ] **1.5.3** Adicionar botão de exportação CSV (leads + origem)
+- [ ] **1.5.4** Mostrar URL de origem ao clicar no quote
 
-### Specific Changes Made
+---
 
-#### Landing Page Translations:
-- **Section Header**: "O Que Fazemos" → "What We Do"
-- **Section Description**: "Serviços profissionais de restauração com precisão de IA" → "Professional restoration services with AI precision"  
-- **Admin Link**: "🔧 Painel Administrativo" → "🔧 Admin Dashboard"
-- **Service Description 1**: "Como novo em 24 horas" → "Like new in 24 hours"
-- **Service Description 2**: "Superfícies antiderrapantes" → "Non-slip surfaces"
-- **Service Description 3**: "Qualquer cor que desejar" → "Any color you want"
-- **Hover Text**: "Restauração profissional" → "Professional restoration"
+## 🟩 PERFIL 2: ENGENHEIRO DE IA (LLM & Prompts)
 
-#### AI Assistant Translations:
-- **Title**: "Sua Assistente AI" → "Your AI Assistant"
-- **Description**: "Especialista em refinamento de banheiros" → "Bathroom refinishing expert"
-- **Status**: "Online agora" → "Online now"  
-- **Chat Message**: "Oi! Pronta para transformar seu banheiro? Converse comigo!" → "Hi! Ready to transform your bathroom? Chat with me!"
+### Fase 2.1: Sistema de Prompts
+- [ ] **2.1.1** Criar diretório `/server/prompts/`
+- [ ] **2.1.2** Criar arquivo `/server/prompts/vendedor-consultor.md` (persona consultiva)
+- [ ] **2.1.3** Criar arquivo `/server/prompts/vendedor-urgencia.md` (persona urgência)
+- [ ] **2.1.4** Criar arquivo `/server/prompts/vendedor-educativo.md` (persona educativa)
+- [ ] **2.1.5** Criar arquivo `/server/prompts/sistema-base.md` (contexto da empresa)
 
-### Quality Assurance Completed
-✅ All Portuguese text removed from user interface  
-✅ All English translations properly implemented  
-✅ No Portuguese characters (ã, ç, õ) found in client files  
-✅ Functionality maintained - no code structure changes  
-✅ All CSS classes and HTML structure preserved  
+### Fase 2.2: Gerenciador de Prompts
+- [ ] **2.2.1** Criar `prompt-manager.ts` (carrega e gerencia prompts)
+- [ ] **2.2.2** Implementar função `loadPrompt(promptName: string)`
+- [ ] **2.2.3** Implementar função `getAvailablePrompts()` (lista personas)
+- [ ] **2.2.4** Criar cache de prompts em memória
+- [ ] **2.2.5** Adicionar validação de prompts no startup
 
-### Impact Assessment
-- **Zero breaking changes** - All modifications were text-only
-- **Maintained functionality** - UI interactions, styling, and behavior unchanged
-- **Complete translation** - No user-facing Portuguese content remains
-- **Simple implementation** - Each change was focused and minimal
+### Fase 2.3: Integração Multi-LLM no Chat
+- [ ] **2.3.1** Refatorar `llm-service.ts` para suportar chat (não só análise de imagem)
+- [ ] **2.3.2** Implementar método `sendChatMessage(messages[], systemPrompt)`
+- [ ] **2.3.3** Adicionar suporte a streaming de respostas
+- [ ] **2.3.4** Conectar OpenAI SDK para chat (gpt-4o-mini)
+- [ ] **2.3.5** Conectar Anthropic SDK para chat (claude-3-5-sonnet)
+- [ ] **2.3.6** Manter Gemini como fallback
 
-The application is now ready for English-speaking users with all interface text properly translated while maintaining full functionality.
+### Fase 2.4: WebSocket Chat Inteligente
+- [ ] **2.4.1** Atualizar `routes.ts` WebSocket handler para usar LLM
+- [ ] **2.4.2** Carregar prompt da persona selecionada
+- [ ] **2.4.3** Implementar contexto de conversa (últimas 10 mensagens)
+- [ ] **2.4.4** Adicionar rate limiting (máx 20 mensagens por sessão)
+- [ ] **2.4.5** Salvar custo de API por mensagem no banco
+- [ ] **2.4.6** Implementar tratamento de erros e fallback
+
+### Fase 2.5: Admin - Configuração de Personas
+- [ ] **2.5.1** Adicionar select de "Persona Ativa" na aba Configuration
+- [ ] **2.5.2** Mostrar preview do prompt selecionado
+- [ ] **2.5.3** Adicionar estatísticas de uso do chat (total de mensagens, custo)
+- [ ] **2.5.4** Criar toggle "Chat Ativo" (habilitar/desabilitar chat globalmente)
+
+### Fase 2.6: Otimização de Custos
+- [ ] **2.6.1** Criar tabela `llm_usage` (sessionId, provider, tokens, cost, timestamp)
+- [ ] **2.6.2** Registrar uso de tokens em cada chamada
+- [ ] **2.6.3** Criar endpoint `GET /api/admin/llm-costs` (custos por período)
+- [ ] **2.6.4** Adicionar card de custos no dashboard admin
+
+---
+
+## 🟨 PERFIL 3: FRONTEND/UX (Conversão & Marketing Viral)
+
+### Fase 3.1: Limpeza e Simplificação da Landing Page
+- [ ] **3.1.1** Reduzir `landing.tsx` de 257 linhas para ~150 linhas
+- [ ] **3.1.2** Remover seção "Como Funciona" (complexa)
+- [ ] **3.1.3** Simplificar Hero: Apenas manchete + sub + CTA "Cotação Rápida"
+- [ ] **3.1.4** Remover tabela de preços (já é dinâmico)
+- [ ] **3.1.5** Manter apenas: Hero + Quote Form + Footer minimalista
+- [ ] **3.1.6** Adicionar seção "Antes & Depois" com 3 fotos
+
+### Fase 3.2: Consolidar Quote Forms
+- [ ] **3.2.1** Deletar `quote-modal.tsx` (470 linhas, duplicado)
+- [ ] **3.2.2** Manter apenas `quote-form.tsx` inline
+- [ ] **3.2.3** Simplificar `quote-form.tsx` (remover histórico de busca)
+- [ ] **3.2.4** Melhorar UX mobile (foco em Instagram)
+- [ ] **3.2.5** Adicionar loading state mais atraente (skeleton)
+
+### Fase 3.3: Sistema de Parâmetros de URL
+- [ ] **3.3.1** Criar hook `useURLParams.ts` (captura ?origem=, ?utm_source=, etc)
+- [ ] **3.3.2** Criar contexto `TrackingContext` (armazena params globalmente)
+- [ ] **3.3.3** Enviar params para API ao fazer tracking
+- [ ] **3.3.4** Salvar params no localStorage (persistir durante sessão)
+
+### Fase 3.4: Variações Dinâmicas (A/B Testing)
+- [ ] **3.4.1** Criar arquivo `/client/src/variants.ts` (configurações de variantes)
+- [ ] **3.4.2** Implementar variação de manchete:
+  - Instagram: "Renove sua Banheira em 24h 🔥"
+  - YouTube: "Veja Quanto Custa Renovar Sua Banheira"
+  - Facebook: "Banheira Nova Sem Trocar? Descubra o Preço"
+- [ ] **3.4.3** Implementar variação de imagem de fundo (3 opções)
+- [ ] **3.4.4** Implementar variação de COR do botão (purple, teal, pink)
+- [ ] **3.4.5** Criar lógica de seleção de variante baseada em URL params
+
+### Fase 3.5: Scripts de Tracking Dinâmicos
+- [ ] **3.5.1** Criar componente `TrackingScripts.tsx`
+- [ ] **3.5.2** Injetar Facebook Pixel se `?pixel=fb` ou origem=instagram
+- [ ] **3.5.3** Injetar Google Analytics se `?pixel=ga`
+- [ ] **3.5.4** Injetar TikTok Pixel se `?pixel=tiktok`
+- [ ] **3.5.5** Carregar scripts apenas quando necessário (performance)
+
+### Fase 3.6: Limpeza de Componentes Não Usados
+- [ ] **3.6.1** Auditar componentes shadcn usados vs disponíveis
+- [ ] **3.6.2** Deletar 30+ componentes UI não utilizados
+- [ ] **3.6.3** Manter apenas: Button, Card, Input, Select, Dialog, Badge, Separator, Table
+- [ ] **3.6.4** Remover imports e dependências não utilizadas
+
+### Fase 3.7: Chat Somente na Página Oficial
+- [ ] **3.7.1** Criar flag `showChat` baseada em URL (só mostrar se não tem params de campanha)
+- [ ] **3.7.2** Ocultar `floating-chat-button` em landing pages de campanha
+- [ ] **3.7.3** Mostrar chat apenas na URL base (sem params)
+- [ ] **3.7.4** Adicionar badge "Beta" no botão de chat
+
+### Fase 3.8: Design System - Otimização
+- [ ] **3.8.1** Reduzir palette de cores (manter Purple, Teal, Pink como accent)
+- [ ] **3.8.2** Simplificar animações (remover excessos)
+- [ ] **3.8.3** Otimizar imagens (WebP, lazy loading)
+- [ ] **3.8.4** Reduzir bundle size (code splitting)
+
+### Fase 3.9: Mobile-First Optimization
+- [ ] **3.9.1** Testar responsividade em iPhone (Safari)
+- [ ] **3.9.2** Ajustar tamanho de fonte para mobile
+- [ ] **3.9.3** Aumentar tamanho de botões (melhor touch target)
+- [ ] **3.9.4** Testar upload de foto no mobile
+
+---
+
+## 🧪 FASE DE TESTES E VALIDAÇÃO
+
+### Testes de Integração
+- [ ] **T1** Testar fluxo completo: Landing → Quote → Admin Dashboard
+- [ ] **T2** Testar tracking com parâmetros: `?origem=instagram&utm_source=reels`
+- [ ] **T3** Testar variantes A/B (manchetes diferentes)
+- [ ] **T4** Testar chat inteligente com cada persona
+- [ ] **T5** Testar métricas de campanhas no admin
+
+### Testes de Performance
+- [ ] **T6** Lighthouse Score (alvo: >90 mobile)
+- [ ] **T7** Tempo de carregamento <2s
+- [ ] **T8** Bundle size <500KB
+- [ ] **T9** Testar em conexão 3G
+
+### Testes de Segurança
+- [ ] **T10** Testar autenticação JWT
+- [ ] **T11** Testar rate limiting do chat
+- [ ] **T12** Testar proteção de rotas admin
+- [ ] **T13** Validar inputs (XSS, SQL injection)
+
+---
+
+## 🚀 ORDEM DE EXECUÇÃO RECOMENDADA
+
+### Sprint 1 (Fundação)
+1. **Perfil 1**: Fase 1.2 (DB de Campanhas) + Fase 1.3 (API de Tracking)
+2. **Perfil 2**: Fase 2.1 (Sistema de Prompts)
+3. **Perfil 3**: Fase 3.3 (Sistema de URL Params)
+
+### Sprint 2 (Core Features)
+1. **Perfil 1**: Fase 1.4 (Dashboard de Campanhas)
+2. **Perfil 2**: Fase 2.3 + 2.4 (Chat Inteligente)
+3. **Perfil 3**: Fase 3.1 + 3.2 (Landing Page Simplificada)
+
+### Sprint 3 (Marketing & Otimização)
+1. **Perfil 1**: Fase 1.5 (Melhorias no Admin)
+2. **Perfil 2**: Fase 2.6 (Otimização de Custos)
+3. **Perfil 3**: Fase 3.4 + 3.5 (A/B Testing + Tracking Scripts)
+
+### Sprint 4 (Polimento & Testes)
+1. **Perfil 3**: Fase 3.6 + 3.7 + 3.8 + 3.9 (Limpeza e Otimização)
+2. **Todos**: Fase de Testes (T1-T13)
+3. **Deploy e Monitoramento**
+
+---
+
+## 📊 MÉTRICAS DE SUCESSO
+
+### Performance
+- ✅ Lighthouse Score: >90 (mobile)
+- ✅ Time to Interactive: <2s
+- ✅ Bundle Size: <500KB
+
+### Conversão
+- ✅ Taxa de conversão: >5% (visitante → lead)
+- ✅ Tempo para primeira cotação: <30s
+- ✅ Bounce rate: <40%
+
+### Custos
+- ✅ Custo por lead via IA: <$0.50
+- ✅ ROI de campanhas visível no dashboard
+
+---
+
+## 📝 PRÓXIMOS PASSOS
+
+**AGUARDANDO REVISÃO DO PLANO** 🔴
+
+Conforme Regra 3 do CLAUDE.md: **"Antes de começar a trabalhar, contactar o usuário para revisar o plano"**
+
+### Perguntas para o usuário:
+
+1. **Prioridade**: Qual perfil devemos começar primeiro? (Backend, IA ou Frontend?)
+2. **Cronograma**: Você quer seguir os 4 sprints ou tem outra preferência?
+3. **Personas do Chat**: Você tem alguma preferência para o "tom de voz" do vendedor?
+4. **Campanhas Iniciais**: Quais fontes de tráfego você vai usar primeiro? (Instagram, YouTube, Facebook?)
+5. **Aprovação**: Este plano está alinhado com sua visão?
+
+---
+
+## 🎯 REVIEW (será preenchido ao final)
+
+_Esta seção será preenchida conforme Regra 7 do CLAUDE.md após a conclusão das tarefas._
+
+### Mudanças Implementadas
+- [ ] TBD
+
+### Problemas Encontrados
+- [ ] TBD
+
+### Melhorias Sugeridas
+- [ ] TBD
+
+### Métricas Finais
+- [ ] TBD
