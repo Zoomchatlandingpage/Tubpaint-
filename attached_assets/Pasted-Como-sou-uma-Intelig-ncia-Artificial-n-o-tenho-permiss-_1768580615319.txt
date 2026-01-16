@@ -1,0 +1,285 @@
+Como sou uma Inteligência Artificial, não tenho permissão para acessar sua conta do GitHub e fazer *commits* ou *pushes* diretamente no seu repositório.
+
+No entanto, posso atuar como seu **Arquiteto de Software Sênior**. Vou escrever o código completo e refinado aqui, organizado exatamente como deve ficar na sua estrutura de pastas. Você (ou seu desenvolvedor) só precisará copiar e colar nos arquivos indicados.
+
+Abaixo está o **Pacote de Implementação "Sales Machine"**, transformando seu projeto de um simples gerador de orçamentos em uma ferramenta de conversão de vendas auditável.
+
+---
+
+### 📂 Arquivo 1: O Cérebro de Dados
+
+**Caminho:** `shared/schema.ts`
+**Assinatura:** `// Architect: Gemini (Database & Sales Engine) - Updated: 2026-01-16`
+
+**Mudança Principal:** Adaptamos o schema anterior para o **Drizzle ORM** (que você já usa). Criamos tabelas separadas para `Leads` (pessoas), `AIAnalysis` (o que a IA viu) e `PricingConfig` (regras de preço), separando a inteligência da matemática.
+
+```typescript
+// Architect: Gemini (Database & Sales Engine) - Updated: 2026-01-16
+import { sql } from "drizzle-orm";
+import { pgTable, text, varchar, integer, timestamp, boolean, jsonb, real } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// 1. LEAD: O ativo mais valioso. Quem é o cliente?
+export const leads = pgTable("leads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").unique(),
+  name: text("name"),
+  phone: text("phone"),
+  source: text("source").default("landing_page"), // ex: manual_entry, landing_page
+  status: text("status").default("NEW"), // NEW, CONTACTED, QUALIFIED, CLOSED
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// 2. PRICING CONFIG: Regras de negócio versionadas (Matemática Blindada)
+export const pricingConfigs = pgTable("pricing_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  version: integer("version").notNull().unique(), // Versão 1, 2, 3...
+  basePrice: integer("base_price").notNull(), // Em centavos (ex: 45000 = $450.00)
+  pricePerSqft: integer("price_per_sqft").default(0),
+  peelingMultiplier: real("peeling_multiplier").default(1.5),
+  complexityMultipliers: jsonb("complexity_multipliers").notNull(), // { "cast_iron": 1.2, "fiberglass": 1.0 }
+  isActive: boolean("active").default(true),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+// 3. AI ANALYSIS: O diagnóstico técnico (A "Visão")
+export const aiAnalyses = pgTable("ai_analyses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  provider: text("provider").default("gemini"), // openai, gemini
+  rawResponse: jsonb("raw_response"), // O JSON puro que a IA retornou (para auditoria)
+  
+  // Dados extraídos para consulta rápida
+  detectedMaterial: text("detected_material"), // cast_iron, fiberglass
+  damageLevel: text("damage_level"), // low, moderate, high
+  hasPeeling: boolean("has_peeling").default(false),
+  confidenceScore: real("confidence_score"),
+  
+  imageUrl: text("image_url"), // Caminho da imagem analisada
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+// 4. QUOTES: O Orçamento final ligado a tudo
+export const quotes = pgTable("quotes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Relacionamentos
+  leadId: varchar("lead_id").references(() => leads.id),
+  aiAnalysisId: varchar("ai_analysis_id").references(() => aiAnalyses.id),
+  pricingConfigId: varchar("pricing_config_id").references(() => pricingConfigs.id),
+  serviceTypeId: varchar("service_type_id"), // Mantido para compatibilidade com seu código antigo
+  
+  // Valores Financeiros
+  totalPrice: integer("total_price"), // Preço final calculado (centavos)
+  estimatedRange: text("estimated_range"), // Ex: "$450 - $600" (Psicológico)
+  complexityScore: real("complexity_score"), // O multiplicador final usado
+  
+  status: text("status").default("PENDING"), // PENDING, SENT, ACCEPTED
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+// Tabelas Legadas/Auxiliares (Mantidas para não quebrar seu admin atual)
+export const serviceTypes = pgTable("service_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  basePrice: integer("base_price"),
+  active: boolean("active").default(true),
+});
+
+export const adminConfig = pgTable("admin_config", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  webhookUrl: text("webhook_url"),
+  llmProvider: text("llm_provider").default("gemini"),
+  llmApiKey: text("llm_api_key"),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
+// Schemas Zod para Insert
+export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertQuoteSchema = createInsertSchema(quotes).omit({ id: true, createdAt: true });
+
+// Tipos Exportados
+export type Lead = typeof leads.$inferSelect;
+export type Quote = typeof quotes.$inferSelect;
+export type AIAnalysis = typeof aiAnalyses.$inferSelect;
+
+```
+
+---
+
+### 📂 Arquivo 2: Os Olhos da IA
+
+**Caminho:** `server/services/vision-service.ts`
+**Assinatura:** `// Developer: Vision Agent - Updated: 2026-01-16`
+
+**Mudança Principal:** Removemos a lógica de preço da IA. Agora ela foca 100% em ser um "Técnico Virtual" que identifica materiais e danos.
+
+```typescript
+// Developer: Vision Agent - Updated: 2026-01-16
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { z } from "zod";
+
+// Schema estrito do que a IA deve retornar
+const VisionResponseSchema = z.object({
+  material: z.enum(["cast_iron", "steel", "fiberglass", "acrylic", "unknown"]),
+  surround_type: z.enum(["tile", "plastic_panel", "painted_wall", "none", "unknown"]),
+  damage_level: z.enum(["low", "moderate", "high"]),
+  has_peeling: z.boolean().describe("True if there is existing paint peeling off"),
+  has_rust: z.boolean(),
+  confidence_score: z.number().min(0).max(1),
+  technical_notes: z.string().describe("Short technical observation about the condition"),
+});
+
+export type VisionAnalysisResult = z.infer<typeof VisionResponseSchema>;
+
+export class VisionService {
+  private genAI: GoogleGenerativeAI;
+
+  constructor(apiKey: string) {
+    if (!apiKey) throw new Error("GEMINI_API_KEY is required for VisionService");
+    this.genAI = new GoogleGenerativeAI(apiKey);
+  }
+
+  async analyzeBathroomImage(imageBase64: string): Promise<VisionAnalysisResult> {
+    const model = this.genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: { responseMimeType: "application/json" } // Força JSON
+    });
+
+    const prompt = `
+      You are an expert Bathtub Refinishing Technician.
+      Analyze this image strictly for technical attributes.
+      
+      CRITICAL RULES:
+      1. IGNORE prices or costs. Focus only on physical condition.
+      2. 'has_peeling' is CRITICAL. Look closely for flaking paint from previous bad jobs.
+      3. Identify if the tub is Cast Iron (looks heavy, rounded deep edges) or Fiberglass (hollow, molded).
+      
+      Return JSON matching this schema:
+      {
+        "material": "cast_iron" | "fiberglass" | "acrylic" | "steel" | "unknown",
+        "surround_type": "tile" | "plastic_panel" | "painted_wall" | "none",
+        "damage_level": "low" | "moderate" | "high",
+        "has_peeling": boolean,
+        "has_rust": boolean,
+        "confidence_score": 0.0 to 1.0,
+        "technical_notes": "string"
+      }
+    `;
+
+    try {
+      const result = await model.generateContent([
+        prompt,
+        { inlineData: { data: imageBase64, mimeType: "image/jpeg" } }
+      ]);
+
+      const text = result.response.text();
+      // Parse e Validação com Zod
+      const parsed = JSON.parse(text);
+      return VisionResponseSchema.parse(parsed);
+
+    } catch (error) {
+      console.error("Vision Analysis Failed:", error);
+      // Fallback seguro em caso de falha da IA (não quebra o app)
+      return {
+        material: "unknown",
+        surround_type: "unknown",
+        damage_level: "low",
+        has_peeling: false,
+        has_rust: false,
+        confidence_score: 0,
+        technical_notes: "AI Analysis failed, manual review required."
+      };
+    }
+  }
+}
+
+```
+
+---
+
+### 📂 Arquivo 3: A Calculadora de Vendas
+
+**Caminho:** `server/services/pricing-service.ts`
+**Assinatura:** `// Developer: Sales Logic Module - Updated: 2026-01-16`
+
+**Mudança Principal:** Nova lógica determinística. Recebe o que a IA viu e aplica as regras de negócio (multiplicadores) definidos por você.
+
+```typescript
+// Developer: Sales Logic Module - Updated: 2026-01-16
+import { VisionAnalysisResult } from "./vision-service";
+
+interface PricingRules {
+  basePrice: number; // centavos
+  peelingMultiplier: number;
+  materialMultipliers: Record<string, number>;
+}
+
+// Configuração Padrão (Simulando o DB por enquanto)
+const CURRENT_PRICING: PricingRules = {
+  basePrice: 45000, // $450.00
+  peelingMultiplier: 1.5, // +50% se tiver descascando
+  materialMultipliers: {
+    "cast_iron": 1.0,
+    "steel": 1.0,
+    "fiberglass": 1.1, // Fibra as vezes precisa de mais reparo estrutural
+    "acrylic": 1.1,
+    "unknown": 1.2 // Margem de segurança
+  }
+};
+
+export class PricingService {
+  
+  calculateQuote(analysis: VisionAnalysisResult) {
+    let multiplier = 1.0;
+    const logs: string[] = [];
+
+    // 1. Fator Material
+    const matFactor = CURRENT_PRICING.materialMultipliers[analysis.material] || 1.0;
+    multiplier *= matFactor;
+    if (matFactor > 1) logs.push(`Material (${analysis.material}): +${Math.round((matFactor-1)*100)}%`);
+
+    // 2. Fator Peeling (O mais crítico para lucro/prejuízo)
+    if (analysis.has_peeling) {
+      multiplier *= CURRENT_PRICING.peelingMultiplier;
+      logs.push(`Peeling Detected: +${Math.round((CURRENT_PRICING.peelingMultiplier-1)*100)}% (Stripping required)`);
+    }
+
+    // 3. Fator Dano
+    if (analysis.damage_level === 'high') {
+      multiplier *= 1.25;
+      logs.push(`High Damage: +25%`);
+    } else if (analysis.damage_level === 'moderate') {
+      multiplier *= 1.1;
+      logs.push(`Moderate Damage: +10%`);
+    }
+
+    // Cálculo Final
+    const finalPriceCents = Math.round(CURRENT_PRICING.basePrice * multiplier);
+    const finalPriceDollars = finalPriceCents / 100;
+
+    // Gerar Range Psicológico (Margem de negociação)
+    const minPrice = Math.floor(finalPriceDollars / 10) * 10; // Arredonda pra baixo (ex: 453 -> 450)
+    const maxPrice = Math.ceil((finalPriceDollars * 1.2) / 10) * 10; // +20% buffer
+
+    return {
+      priceCents: finalPriceCents,
+      displayRange: `$${minPrice} - $${maxPrice}`,
+      breakdown: logs,
+      isHighRisk: analysis.damage_level === 'high' || analysis.has_peeling
+    };
+  }
+}
+
+```
+
+---
+
+### Como aplicar isso no seu Replit/VS Code:
+
+1. **Copie o código do Arquivo 1** e substitua todo o conteúdo de `shared/schema.ts`. (Atenção: isso vai alterar seu banco de dados, rode o comando de migração do Drizzle depois: `npm run db:push` ou equivalente no seu `package.json`).
+2. **Crie o arquivo** `server/services/vision-service.ts` e cole o código do Arquivo 2.
+3. **Crie o arquivo** `server/services/pricing-service.ts` e cole o código do Arquivo 3.
+
+Essa estrutura prepara seu projeto para não apenas "dar um preço", mas capturar leads de forma inteligente e segura.
