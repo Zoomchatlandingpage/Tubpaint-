@@ -1,247 +1,286 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import AiAssistant from "@/components/ai-assistant";
-import ChatModal from "@/components/chat-modal";
+import { useSearch } from "wouter";
 import QuoteModal from "@/components/quote-modal";
-import FloatingChatButton from "@/components/floating-chat-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ServiceType } from "@shared/schema";
+import { Camera, Clock, DollarSign, Shield, Star, CheckCircle, ArrowRight } from "lucide-react";
+
+type PageVariant = "default" | "price" | "before-after" | "speed";
 
 export default function LandingPage() {
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const searchString = useSearch();
 
   const { data: serviceTypes = [] } = useQuery<ServiceType[]>({
     queryKey: ['/api/service-types']
   });
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    element?.scrollIntoView({ behavior: 'smooth' });
+  const variant = useMemo<PageVariant>(() => {
+    const params = new URLSearchParams(searchString);
+    const v = params.get("variant");
+    if (v && ["price", "before-after", "speed"].includes(v)) {
+      return v as PageVariant;
+    }
+    return "default";
+  }, [searchString]);
+
+  const getHeroContent = () => {
+    switch (variant) {
+      case "price":
+        return {
+          headline: "New Bathtub Look for",
+          highlight: "Under $500",
+          subheadline: "Why spend $3,000+ replacing when you can refinish for a fraction of the cost?",
+          cta: "Get Your Free Quote"
+        };
+      case "before-after":
+        return {
+          headline: "From Old to",
+          highlight: "Like New",
+          subheadline: "See the incredible transformation. Your bathtub can look brand new in just one day.",
+          cta: "See Your Transformation"
+        };
+      case "speed":
+        return {
+          headline: "Done in",
+          highlight: "24 Hours",
+          subheadline: "Wake up to a brand new bathtub. Quick, professional, mess-free refinishing.",
+          cta: "Schedule Now"
+        };
+      default:
+        return {
+          headline: "Beautiful Bathtub.",
+          highlight: "Affordable Price.",
+          subheadline: "Professional refinishing that looks amazing. Upload a photo, get an instant AI quote.",
+          cta: "Get Instant Quote"
+        };
+    }
   };
 
-  const handleOpenQuoteModal = () => {
-    setIsQuoteModalOpen(true);
-  };
+  const heroContent = getHeroContent();
 
   return (
-    <div className="bg-background text-foreground">
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 glass-effect">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold gradient-text">RefineAI</h1>
-            </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-baseline space-x-8">
-                <button 
-                  onClick={() => scrollToSection('services')}
-                  className="text-foreground/80 hover:text-foreground transition-colors duration-200"
-                  data-testid="nav-services"
-                >
-                  Services
-                </button>
-                <button 
-                  onClick={() => scrollToSection('pricing')}
-                  className="text-foreground/80 hover:text-foreground transition-colors duration-200"
-                  data-testid="nav-pricing"
-                >
-                  Pricing
-                </button>
-                <a 
-                  href="/admin"
-                  className="text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors duration-200"
-                  data-testid="nav-admin"
-                  title="Administrative Access"
-                >
-                  ⚙️
-                </a>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Simple Header */}
+      <header className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-sm border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+          <h1 className="text-xl font-bold text-slate-900">
+            Refine<span className="text-blue-600">AI</span>
+          </h1>
+          <a 
+            href="/admin" 
+            className="text-xs text-slate-400 hover:text-slate-600"
+            title="Admin"
+          >
+            ⚙️
+          </a>
         </div>
-      </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className="pt-16 min-h-screen flex items-center relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8 animate-fade-in-up">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight">
-              Transform Your{" "}
-              <span className="gradient-text">Bathtub in 24 Hours</span>{" "}
-              with AI-Powered Precision
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl">
-              Upload a photo, see your preview, get instant pricing. Our AI assistant guides you through every step of your bathroom transformation.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 group"
-                onClick={handleOpenQuoteModal}
-                data-testid="button-upload-photo"
-              >
-                <i className="fas fa-camera"></i>
-                <span>Upload Photo</span>
-                <span className="text-sm opacity-75">Get Quote</span>
-              </Button>
-              <Button 
-                variant="outline"
-                className="glass-effect hover:bg-white/10 text-foreground px-8 py-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center space-x-2 group"
-                onClick={() => setIsChatOpen(true)}
-                data-testid="button-chat-ai"
-              >
-                <i className="fas fa-robot"></i>
-                <span>Chat with AI</span>
-                <span className="text-sm opacity-75">Design Helper</span>
-              </Button>
-            </div>
-            {/* Trust Signals */}
-            <div className="flex flex-wrap gap-6 pt-6 border-t border-border">
-              <div className="flex items-center space-x-2">
-                <i className="fas fa-shield-alt text-secondary"></i>
-                <span className="text-sm">Licensed & Insured</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <i className="fas fa-money-bill-wave text-secondary"></i>
-                <span className="text-sm">Money Back Guarantee</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <i className="fas fa-clock text-secondary"></i>
-                <span className="text-sm">24 Hour Service</span>
-              </div>
-            </div>
-          </div>
+      {/* Hero Section - Simple & Direct */}
+      <section className="pt-24 pb-16 px-4">
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
+            {heroContent.headline}{" "}
+            <span className="text-blue-600">{heroContent.highlight}</span>
+          </h1>
           
-          {/* AI Assistant */}
-          <AiAssistant onChatClick={() => setIsChatOpen(true)} />
+          <p className="text-xl text-slate-600 max-w-2xl mx-auto mb-8">
+            {heroContent.subheadline}
+          </p>
+
+          <Button 
+            size="lg"
+            onClick={() => setIsQuoteModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg font-semibold rounded-xl shadow-lg shadow-blue-600/25 transition-all hover:shadow-xl hover:shadow-blue-600/30"
+            data-testid="hero-cta-button"
+          >
+            <Camera className="w-5 h-5 mr-2" />
+            {heroContent.cta}
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+
+          <p className="text-sm text-slate-500 mt-4">
+            📸 Upload a photo • ⚡ Get instant AI quote • 📅 Schedule your visit
+          </p>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section id="services" className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4">What We Do</h2>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Professional restoration services with AI precision
-            </p>
+      {/* 3 Simple Benefits */}
+      <section className="py-16 px-4 bg-slate-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <Card className="border-0 shadow-sm bg-white">
+              <CardContent className="pt-6 text-center">
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <DollarSign className="w-7 h-7 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Save 80%</h3>
+                <p className="text-slate-600 text-sm">
+                  Refinishing costs a fraction of replacement. Same beautiful result.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white">
+              <CardContent className="pt-6 text-center">
+                <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-7 h-7 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Done in 1 Day</h3>
+                <p className="text-slate-600 text-sm">
+                  Quick professional service. Your bathroom ready the next morning.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-sm bg-white">
+              <CardContent className="pt-6 text-center">
+                <div className="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Shield className="w-7 h-7 text-purple-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">5-Year Warranty</h3>
+                <p className="text-slate-600 text-sm">
+                  Professional quality backed by our satisfaction guarantee.
+                </p>
+              </CardContent>
+            </Card>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            {serviceTypes.slice(0, 3).map((service, index) => {
-              const icons = ["🛁", "🚿", "🏺"];
-              const descriptions = [
-                "Like new in 24 hours",
-                "Non-slip surfaces", 
-                "Any color you want"
-              ];
-              
-              return (
-                <Card key={service.id} className="service-card glass-effect rounded-xl p-8 text-center group" data-testid={`service-card-${index}`}>
-                  <CardContent className="p-0">
-                    <div className="text-4xl mb-4">{icons[index]}</div>
-                    <h3 className="text-xl font-semibold mb-3">{service.name}</h3>
-                    <p className="text-muted-foreground mb-4">{descriptions[index]}</p>
-                    <div className="text-sm text-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      Professional restoration
+        </div>
+      </section>
+
+      {/* How It Works - Simple Steps */}
+      <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">
+            Get Your Quote in 60 Seconds
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                1
+              </div>
+              <h3 className="font-semibold text-slate-900 mb-2">📸 Take a Photo</h3>
+              <p className="text-slate-600 text-sm">Snap a quick photo of your bathtub or shower</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                2
+              </div>
+              <h3 className="font-semibold text-slate-900 mb-2">🤖 AI Analyzes</h3>
+              <p className="text-slate-600 text-sm">Our AI calculates your exact price instantly</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+                3
+              </div>
+              <h3 className="font-semibold text-slate-900 mb-2">📅 Schedule Visit</h3>
+              <p className="text-slate-600 text-sm">Book your free in-home consultation</p>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <Button 
+              size="lg"
+              onClick={() => setIsQuoteModalOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-lg font-semibold rounded-xl"
+              data-testid="steps-cta-button"
+            >
+              <Camera className="w-5 h-5 mr-2" />
+              Start My Free Quote
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Services Grid */}
+      {serviceTypes.length > 0 && (
+        <section className="py-16 px-4 bg-slate-50">
+          <div className="max-w-5xl mx-auto">
+            <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">
+              What We Refinish
+            </h2>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {serviceTypes.map((service) => (
+                <Card 
+                  key={service.id} 
+                  className="border-0 shadow-sm bg-white hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => setIsQuoteModalOpen(true)}
+                >
+                  <CardContent className="p-4 text-center">
+                    <div className="text-3xl mb-2">
+                      {service.name.toLowerCase().includes('bathtub') ? '🛁' :
+                       service.name.toLowerCase().includes('shower') ? '🚿' :
+                       service.name.toLowerCase().includes('tile') ? '🏺' :
+                       service.name.toLowerCase().includes('counter') ? '🪞' : '✨'}
                     </div>
+                    <h3 className="font-medium text-slate-900 text-sm">{service.name}</h3>
                   </CardContent>
                 </Card>
-              );
-            })}
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Trust Badges */}
+      <section className="py-12 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex flex-wrap justify-center items-center gap-8 text-slate-500">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              <span className="text-sm">Licensed & Insured</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Star className="w-5 h-5 text-yellow-500" />
+              <span className="text-sm">5-Star Rated</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Shield className="w-5 h-5 text-blue-500" />
+              <span className="text-sm">Satisfaction Guaranteed</span>
+            </div>
           </div>
         </div>
       </section>
 
-
-      {/* Pricing Section */}
-      <section id="pricing" className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-8">Get Your AI-Powered Quote</h2>
-          <p className="text-xl text-muted-foreground mb-12">
-            Upload a photo of your bathroom and get instant pricing with our AI technology
+      {/* Final CTA */}
+      <section className="py-16 px-4 bg-blue-600">
+        <div className="max-w-3xl mx-auto text-center">
+          <h2 className="text-3xl font-bold text-white mb-4">
+            Ready for a Beautiful Bathroom?
+          </h2>
+          <p className="text-blue-100 mb-8">
+            Join thousands of happy customers. Get your free quote now.
           </p>
-          
-          <Card className="glass-effect rounded-xl p-8 mb-8">
-            <CardContent className="p-0">
-              <div className="space-y-6">
-                <div className="text-6xl mb-4">📸</div>
-                <h3 className="text-2xl font-semibold mb-4">Ready to Transform Your Space?</h3>
-                <p className="text-muted-foreground mb-6">
-                  Our AI analyzes your photos to provide accurate pricing and renovation previews
-                </p>
-                <Button 
-                  size="lg"
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-12 py-4 text-xl font-semibold"
-                  onClick={handleOpenQuoteModal}
-                  data-testid="pricing-button-get-quote"
-                >
-                  <i className="fas fa-camera mr-3"></i>
-                  Upload Photo & Get Quote
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm text-muted-foreground">
-            <div className="flex items-center justify-center space-x-2">
-              <i className="fas fa-clock text-primary"></i>
-              <span>Instant AI Analysis</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <i className="fas fa-shield-alt text-primary"></i>
-              <span>Secure & Private</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <i className="fas fa-money-bill-wave text-primary"></i>
-              <span>No Hidden Fees</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-20 bg-muted/20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-8">Get Started Today</h2>
-          <p className="text-xl text-muted-foreground mb-12">Ready to transform your space?</p>
-          
-          <Card className="glass-effect rounded-xl p-8 mb-8">
-            <CardContent className="p-0">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div>
-                  <div className="text-3xl mb-4">📱</div>
-                  <h3 className="font-semibold mb-2">Call Us</h3>
-                  <p className="text-muted-foreground">(555) 123-4567</p>
-                </div>
-                <div>
-                  <div className="text-3xl mb-4">📧</div>
-                  <h3 className="font-semibold mb-2">Email</h3>
-                  <p className="text-muted-foreground">hello@refineai.com</p>
-                </div>
-                <div>
-                  <div className="text-3xl mb-4">📍</div>
-                  <h3 className="font-semibold mb-2">Service Area</h3>
-                  <p className="text-muted-foreground">Serving Your City</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
           <Button 
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200"
-            data-testid="button-schedule-consultation"
+            size="lg"
+            onClick={() => setIsQuoteModalOpen(true)}
+            className="bg-white text-blue-600 hover:bg-blue-50 px-8 py-6 text-lg font-semibold rounded-xl"
+            data-testid="final-cta-button"
           >
-            Schedule Free Consultation
+            <Camera className="w-5 h-5 mr-2" />
+            Get My Free Quote Now
           </Button>
         </div>
       </section>
 
-
-      {/* Chat Modal */}
-      <ChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      {/* Simple Footer */}
+      <footer className="py-8 px-4 bg-slate-900 text-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <p className="text-slate-400 text-sm">
+            © 2025 RefineAI. Professional Bathroom Refinishing.
+          </p>
+          <p className="text-slate-500 text-xs mt-2">
+            📞 (555) 123-4567 • 📧 hello@refineai.com
+          </p>
+        </div>
+      </footer>
 
       {/* Quote Modal */}
       <QuoteModal 
@@ -249,9 +288,6 @@ export default function LandingPage() {
         onClose={() => setIsQuoteModalOpen(false)}
         serviceTypes={serviceTypes}
       />
-
-      {/* Floating Chat Button */}
-      <FloatingChatButton onClick={() => setIsChatOpen(true)} />
     </div>
   );
 }

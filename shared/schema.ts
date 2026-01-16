@@ -18,10 +18,27 @@ export const serviceTypes = pgTable("service_types", {
   active: boolean("active").default(true),
 });
 
+// Leads table - para tracking de clientes qualificados
+export const leads = pgTable("leads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email"),
+  name: text("name"),
+  phone: text("phone"),
+  source: text("source").default("landing_page"), // landing_page, manual_entry, utm_source
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  variant: text("variant"), // price, before-after, speed
+  status: text("status").default("NEW"), // NEW, CONTACTED, QUALIFIED, CLOSED
+  createdAt: timestamp("created_at").default(sql`now()`),
+  updatedAt: timestamp("updated_at").default(sql`now()`),
+});
+
 export const quotes = pgTable("quotes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   customerEmail: text("customer_email"),
   customerName: text("customer_name"),
+  leadId: varchar("lead_id").references(() => leads.id),
   serviceTypeId: varchar("service_type_id").references(() => serviceTypes.id),
   photoPath: text("photo_path"),
   aiAnalysis: jsonb("ai_analysis"),
@@ -49,6 +66,7 @@ export const adminConfig = pgTable("admin_config", {
 
 export const insertUserSchema = createInsertSchema(users).omit({ id: true });
 export const insertServiceTypeSchema = createInsertSchema(serviceTypes).omit({ id: true });
+export const insertLeadSchema = createInsertSchema(leads).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertQuoteSchema = createInsertSchema(quotes).omit({ id: true, createdAt: true });
 export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({ id: true, timestamp: true });
 export const insertAdminConfigSchema = createInsertSchema(adminConfig).omit({ id: true, updatedAt: true });
@@ -58,6 +76,9 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type ServiceType = typeof serviceTypes.$inferSelect;
 export type InsertServiceType = z.infer<typeof insertServiceTypeSchema>;
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
 
 export type Quote = typeof quotes.$inferSelect;
 export type InsertQuote = z.infer<typeof insertQuoteSchema>;

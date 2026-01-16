@@ -68,7 +68,7 @@ const AIAnalysisDisplay = ({ analysis }: { analysis: AIAnalysis }) => {
           <Separator />
           <div className="flex justify-between font-semibold">
             <span>Total:</span>
-            <span>${analysis.totalPrice}</span>
+            <span>${String(analysis.totalPrice ?? 0)}</span>
           </div>
         </div>
       </div>
@@ -373,14 +373,14 @@ export default function QuoteModal({ isOpen, onClose, serviceTypes }: QuoteModal
                   <div className="flex justify-between items-center p-4 bg-background rounded-lg border">
                     <div>
                       <span className="text-sm text-muted-foreground">
-                        {quote.aiAnalysis ? 'AI-Calculated Price:' : 'Estimated Price:'}
+                        {Boolean(quote.aiAnalysis) ? 'AI-Calculated Price:' : 'Estimated Price:'}
                       </span>
                       <div className="text-xs text-muted-foreground">
-                        {quote.aiAnalysis ? 'Based on photo analysis' : 'Base service pricing'}
+                        {Boolean(quote.aiAnalysis) ? 'Based on photo analysis' : 'Base service pricing'}
                       </div>
                     </div>
                     <span className="text-3xl font-bold text-primary" data-testid="modal-quote-price">
-                      ${typeof quote.totalPrice === 'number' ? quote.totalPrice : 0}
+                      ${String(quote.totalPrice ?? 0)}
                     </span>
                   </div>
                   
@@ -446,7 +446,7 @@ export default function QuoteModal({ isOpen, onClose, serviceTypes }: QuoteModal
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="font-semibold">${historicalQuote.totalPrice}</div>
+                          <div className="font-semibold">${String(historicalQuote.totalPrice ?? 0)}</div>
                           <Badge variant="outline" className="text-xs">
                             {historicalQuote.status}
                           </Badge>
